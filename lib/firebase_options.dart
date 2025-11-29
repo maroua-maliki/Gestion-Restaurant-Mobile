@@ -1,20 +1,20 @@
+// Ce fichier peut être envoyé sur Git.
+// Il importe les clés depuis un fichier non suivi.
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:restaurantapp/firebase_options_secret.dart'; // Importe les clés secrètes
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return const FirebaseOptions(
-          apiKey: 'AIzaSyAXz9_T6Yc8cfuw3PDB0nCikWZDMcSy6II',
-          appId: '1:75242576312:android:521281cd30cab2e654974d',
-          messagingSenderId: '75242576312',
-          projectId: 'restaurantapp-27bef',
-          storageBucket: 'restaurantapp-27bef.firebasestorage.app',
-        );
+        return androidFirebaseOptions; // Utilise la constante du fichier secret
       case TargetPlatform.iOS:
+        // Si vous aviez une config iOS, vous l'importeriez de la même manière.
+        // return iosFirebaseOptions;
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for iOS.',
+          'DefaultFirebaseOptions have not been configured for iOS - '
+          'run "flutterfire configure" for more details.',
         );
       default:
         throw UnsupportedError(
