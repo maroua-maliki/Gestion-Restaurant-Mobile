@@ -24,8 +24,17 @@ class TableService {
     });
   }
 
-    // Supprime une table
+  // Supprime une table
   Future<void> deleteTable(String tableId) {
     return _firestore.collection('tables').doc(tableId).delete();
+  }
+
+  // Récupère les tables assignées à un serveur spécifique
+  Stream<QuerySnapshot> getTablesForServer(String serverId) {
+    return _firestore
+        .collection('tables')
+        .where('assignedServerId', isEqualTo: serverId)
+        .orderBy('number')
+        .snapshots();
   }
 }

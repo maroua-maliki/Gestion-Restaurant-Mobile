@@ -37,26 +37,42 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+
+        // Gérer l'erreur de précondition Firestore
         if (snapshot.hasError) {
-          print(snapshot.error); // For debugging
-          return const Center(
+          print(snapshot.error); // Garder pour le débogage
+          String errorMessage = "Une erreur inattendue est survenue.";
+          if (snapshot.error is FirebaseException) {
+            final e = snapshot.error as FirebaseException;
+            if (e.code == 'failed-precondition') {
+              errorMessage = "La base de données nécessite un index. Veuillez cliquer sur le lien dans la console de débogage pour le créer.";
+            }
+          }
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                "Une erreur est survenue. Assurez-vous d'avoir créé l'index composite dans Firestore.",
-                textAlign: TextAlign.center,
-              ),
+              padding: const EdgeInsets.all(24.0),
+              child: Text(errorMessage, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: Colors.red)),
             ),
           );
         }
+
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.table_restaurant_outlined, size: 60, color: Colors.grey),
-                SizedBox(height: 16),
-                Text("Aucune table ne vous est assignée.", style: TextStyle(fontSize: 16, color: Colors.grey)),
+                const Icon(Icons.table_restaurant_outlined, size: 60, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text("Aucune table ne vous est assignée.", style: TextStyle(fontSize: 16, color: Colors.grey)),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    "Vérifiez que le rôle 'Serveur' est bien assigné à l'utilisateur avec l'ID: ${currentUser!.uid}",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ),
               ],
             )
           );
