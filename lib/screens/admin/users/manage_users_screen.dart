@@ -33,6 +33,19 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
           final users = snapshot.data!;
 
+          // --- LOGIQUE DE TRI ---
+          users.sort((a, b) {
+            if (a.role == 'Admin' && b.role != 'Admin') {
+              return -1; // a (Admin) vient avant b
+            }
+            if (b.role == 'Admin' && a.role != 'Admin') {
+              return 1; // b (Admin) vient avant a
+            }
+            // Sinon, tri par ordre alphabétique du nom
+            return a.displayName.compareTo(b.displayName);
+          });
+          // --- FIN DE LA LOGIQUE DE TRI ---
+
           return ListView.builder(
             padding: const EdgeInsets.all(8.0),
             itemCount: users.length,

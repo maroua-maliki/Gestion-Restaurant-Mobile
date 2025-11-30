@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:restaurantapp/screens/admin/menus/manage_menus_screen.dart';
+import 'package:restaurantapp/screens/admin/tables/manage_tables_screen.dart';
 import 'package:restaurantapp/screens/admin/users/manage_users_screen.dart';
 
 class AdminScreen extends StatelessWidget {
@@ -39,7 +40,7 @@ class AdminScreen extends StatelessWidget {
             icon: Icons.table_restaurant,
             label: 'Gérer les Tables',
             onTap: () {
-              // TODO: Naviguer vers l'écran de gestion des tables
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageTablesScreen()));
             },
           ),
           _buildDashboardCard(
