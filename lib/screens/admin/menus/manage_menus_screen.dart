@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:restaurantapp/widgets/admin_drawer.dart';
 
 class ManageMenusScreen extends StatelessWidget {
   const ManageMenusScreen({super.key});
@@ -6,6 +7,7 @@ class ManageMenusScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AdminDrawer(), // Ajout de la barre latérale
       appBar: AppBar(
         title: const Text('Gestion des Menus'),
       ),

@@ -7,7 +7,7 @@ class ServeurScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const ServeurDrawer(), // Ajout de la barre latérale du Serveur
+      drawer: const ServeurDrawer(),
       appBar: AppBar(
         title: const Text('Espace Serveur'),
       ),

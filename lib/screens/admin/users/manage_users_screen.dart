@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:restaurantapp/models/user_model.dart';
 import 'package:restaurantapp/services/user_service.dart';
+import 'package:restaurantapp/widgets/admin_drawer.dart';
 
 class ManageUsersScreen extends StatefulWidget {
   const ManageUsersScreen({super.key});
@@ -15,6 +16,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AdminDrawer(), // Ajout de la barre latérale
       appBar: AppBar(
         title: const Text('Gestion du Personnel'),
       ),
@@ -33,18 +35,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
           final users = snapshot.data!;
 
-          // --- LOGIQUE DE TRI ---
           users.sort((a, b) {
             if (a.role == 'Admin' && b.role != 'Admin') {
-              return -1; // a (Admin) vient avant b
+              return -1;
             }
             if (b.role == 'Admin' && a.role != 'Admin') {
-              return 1; // b (Admin) vient avant a
+              return 1;
             }
-            // Sinon, tri par ordre alphabétique du nom
             return a.displayName.compareTo(b.displayName);
           });
-          // --- FIN DE LA LOGIQUE DE TRI ---
 
           return ListView.builder(
             padding: const EdgeInsets.all(8.0),
@@ -64,6 +63,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 
+  // ... (le reste du code reste identique) ...
   void _showUserDialog({AppUser? user}) {
     final formKey = GlobalKey<FormState>();
     final emailController = TextEditingController(text: user?.email ?? '');

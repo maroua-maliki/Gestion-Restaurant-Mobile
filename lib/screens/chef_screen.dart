@@ -7,7 +7,7 @@ class ChefScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const ChefDrawer(), // Ajout de la barre latérale du Chef
+      drawer: const ChefDrawer(),
       appBar: AppBar(
         title: const Text('Espace Chef'),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:restaurantapp/models/user_model.dart';
 import 'package:restaurantapp/services/table_service.dart';
 import 'package:restaurantapp/services/user_service.dart';
+import 'package:restaurantapp/widgets/admin_drawer.dart';
 
 class ManageTablesScreen extends StatefulWidget {
   const ManageTablesScreen({super.key});
@@ -18,6 +19,7 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AdminDrawer(), // Ajout de la barre latérale
       appBar: AppBar(
         title: const Text('Gestion des Tables'),
       ),
@@ -43,7 +45,7 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
                 padding: const EdgeInsets.all(16),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  childAspectRatio: 1, // Des cartes carrées
+                  childAspectRatio: 1,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
                 ),
@@ -65,6 +67,7 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
     );
   }
 
+  // ... (le reste du code reste identique) ...
   Widget _buildTableCard(DocumentSnapshot tableDoc) {
     final tableData = tableDoc.data() as Map<String, dynamic>;
     final bool isAvailable = tableData['isAvailable'] ?? true;
@@ -88,10 +91,10 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
             children: [
               Icon(
                 Icons.table_restaurant_outlined,
-                size: 44, // Réduction de la taille de l'icône
+                size: 44, 
                 color: isAvailable ? colorScheme.primary : Colors.grey[400],
               ),
-              const SizedBox(height: 8), // Réduction de l'espacement
+              const SizedBox(height: 8),
               Text(
                 tableData['number'] ?? 'N/A',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:restaurantapp/screens/admin/menus/manage_menus_screen.dart';
 import 'package:restaurantapp/screens/admin/tables/manage_tables_screen.dart';
 import 'package:restaurantapp/screens/admin/users/manage_users_screen.dart';
+import 'package:restaurantapp/widgets/admin_drawer.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -9,13 +10,14 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AdminDrawer(), // La barre latérale est toujours là
       appBar: AppBar(
         title: const Text('Tableau de Bord Admin'),
-        centerTitle: true,
       ),
+      // On remet la grille de cartes ici
       body: GridView.count(
         padding: const EdgeInsets.all(16.0),
-        crossAxisCount: 2, // 2 colonnes
+        crossAxisCount: 2, 
         crossAxisSpacing: 16.0,
         mainAxisSpacing: 16.0,
         children: [
