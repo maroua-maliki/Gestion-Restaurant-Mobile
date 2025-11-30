@@ -8,8 +8,13 @@ class UserService {
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'us-central1');
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Récupère un flux de TOUS les utilisateurs
   Stream<List<AppUser>> getUsers() {
-    return _firestore.collection('users').snapshots().map((snapshot) {
+    return _firestore
+        .collection('users')
+        // Le filtre .where() est retiré pour éviter les problèmes d'index
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
         return AppUser.fromFirestore(doc.data(), doc.id);
       }).toList();
@@ -18,9 +23,7 @@ class UserService {
 
   Future<String?> _callFunction(String name, Map<String, dynamic> data) async {
     final currentUser = _auth.currentUser;
-    if (currentUser == null) {
-      return "Session expirée. Veuillez vous reconnecter.";
-    }
+    if (currentUser == null) return "Session expirée. Veuillez vous reconnecter.";
     try {
       await currentUser.getIdToken(true);
       final callable = _functions.httpsCallable(name);
@@ -34,24 +37,18 @@ class UserService {
   }
 
   Future<String?> createUser(String email, String password, String displayName, String role) {
-    return _callFunction('createUser', {
-      'email': email,
-      'password': password,
-      'displayName': displayName,
-      'role': role,
-    });
+    return _callFunction('createUser', {'email': email, 'password': password, 'displayName': displayName, 'role': role});
   }
 
   Future<String?> updateUser(String uid, String email, String displayName, String role) {
-    return _callFunction('updateUser', {
-      'uid': uid,
-      'email': email,
-      'displayName': displayName,
-      'role': role,
-    });
+    return _callFunction('updateUser', {'uid': uid, 'email': email, 'displayName': displayName, 'role': role});
   }
 
   Future<String?> deleteUser(String uid) {
     return _callFunction('deleteUser', {'uid': uid});
+  }
+  
+  Future<String?> toggleUserStatus(String uid, bool newStatus) {
+    return _callFunction('toggleUserStatus', {'uid': uid, 'isActive': newStatus});
   }
 }

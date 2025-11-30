@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:restaurantapp/screens/admin/menus/manage_menus_screen.dart';
+import 'package:restaurantapp/screens/admin/menus/manage_categories_screen.dart';
+import 'package:restaurantapp/screens/admin/menus/manage_plats_screen.dart';
 import 'package:restaurantapp/screens/admin/tables/manage_tables_screen.dart';
 import 'package:restaurantapp/screens/admin/users/manage_users_screen.dart';
 import 'package:restaurantapp/widgets/app_drawer_header.dart';
@@ -15,10 +16,17 @@ class AdminDrawer extends StatelessWidget {
         children: [
           const AppDrawerHeader(), // En-tête partagé
           _buildDrawerItem(
-            icon: Icons.menu_book,
-            title: 'Gérer les Menus',
-            onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ManageMenusScreen())),
+            // Icône mise à jour ici
+            icon: Icons.collections_bookmark_outlined,
+            title: 'Gérer les Catégories',
+            onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoriesScreen())),
           ),
+          _buildDrawerItem(
+            icon: Icons.restaurant_menu,
+            title: 'Gérer les Plats',
+            onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagePlatsScreen())),
+          ),
+          const Divider(),
           _buildDrawerItem(
             icon: Icons.people,
             title: 'Gérer le Personnel',
@@ -29,6 +37,7 @@ class AdminDrawer extends StatelessWidget {
             title: 'Gérer les Tables',
             onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageTablesScreen())),
           ),
+           const Divider(),
           _buildDrawerItem(
             icon: Icons.bar_chart,
             title: 'Statistiques',

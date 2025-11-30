@@ -16,7 +16,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AdminDrawer(), // Ajout de la barre latérale
+      drawer: const AdminDrawer(),
       appBar: AppBar(
         title: const Text('Gestion du Personnel'),
       ),
@@ -33,25 +33,27 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             return const Center(child: Text("Aucun utilisateur trouvé."));
           }
 
-          final users = snapshot.data!;
+          // --- FILTRAGE ET TRI CÔTÉ CLIENT ---
+          final allUsers = snapshot.data!;
+          // 1. Filtrer pour ne garder que les non-supprimés
+          final activeUsers = allUsers.where((user) => user.deletedAt == null).toList();
 
-          users.sort((a, b) {
-            if (a.role == 'Admin' && b.role != 'Admin') {
-              return -1;
-            }
-            if (b.role == 'Admin' && a.role != 'Admin') {
-              return 1;
-            }
+          // 2. Trier la liste filtrée
+          activeUsers.sort((a, b) {
+            if (a.role == 'Admin') return -1;
+            if (b.role == 'Admin') return 1;
             return a.displayName.compareTo(b.displayName);
           });
+          // --- FIN DE LA SECTION ---
+
+          if (activeUsers.isEmpty) {
+            return const Center(child: Text("Aucun utilisateur à afficher."));
+          }
 
           return ListView.builder(
             padding: const EdgeInsets.all(8.0),
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return _buildUserCard(context, user);
-            },
+            itemCount: activeUsers.length,
+            itemBuilder: (context, index) => _buildUserCard(context, activeUsers[index]),
           );
         },
       ),
@@ -63,7 +65,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 
-  // ... (le reste du code reste identique) ...
+  // ... (le reste du code est inchangé et correct) ...
   void _showUserDialog({AppUser? user}) {
     final formKey = GlobalKey<FormState>();
     final emailController = TextEditingController(text: user?.email ?? '');
@@ -84,34 +86,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextFormField(
-                    controller: displayNameController,
-                    decoration: const InputDecoration(labelText: 'Nom complet'),
-                    validator: (value) => value!.isEmpty ? 'Le nom est requis' : null,
-                  ),
+                  TextFormField(controller: displayNameController, decoration: const InputDecoration(labelText: 'Nom complet'), validator: (v) => v!.isEmpty ? 'Requis' : null),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) => value!.isEmpty ? 'L\'email est requis' : null,
-                  ),
+                  TextFormField(controller: emailController, decoration: const InputDecoration(labelText: 'Email'), keyboardType: TextInputType.emailAddress, validator: (v) => v!.isEmpty ? 'Requis' : null),
                   const SizedBox(height: 16),
                   if (user == null) ...[
-                    TextFormField(
-                      controller: passwordController,
-                      decoration: const InputDecoration(labelText: 'Mot de passe'),
-                      obscureText: true,
-                      validator: (value) => value!.length < 6 ? '6 caractères min.' : null,
-                    ),
+                    TextFormField(controller: passwordController, decoration: const InputDecoration(labelText: 'Mot de passe'), obscureText: true, validator: (v) => v!.length < 6 ? '6 caractères min.' : null),
                     const SizedBox(height: 16),
                   ],
                   DropdownButtonFormField<String>(
                     value: selectedRole,
                     decoration: const InputDecoration(labelText: 'Rôle'),
-                    items: ['Chef', 'Serveur'].map((String role) {
-                      return DropdownMenuItem<String>(value: role, child: Text(role));
-                    }).toList(),
+                    items: ['Chef', 'Serveur'].map((String role) => DropdownMenuItem<String>(value: role, child: Text(role))).toList(),
                     onChanged: (newValue) => setState(() => selectedRole = newValue!),
                   ),
                 ],
@@ -119,27 +105,20 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: isLoading ? null : () => Navigator.pop(context),
-              child: const Text('Annuler'),
-            ),
+            TextButton(onPressed: isLoading ? null : () => Navigator.pop(context), child: const Text('Annuler')),
             ElevatedButton(
               onPressed: isLoading ? null : () async {
                 if (formKey.currentState!.validate()) {
                   setState(() => isLoading = true);
-
                   String? error;
                   if (user == null) {
                     error = await _userService.createUser(emailController.text, passwordController.text, displayNameController.text, selectedRole);
                   } else {
                     error = await _userService.updateUser(user.uid, emailController.text, displayNameController.text, selectedRole);
                   }
-
                   if (!mounted) return;
-
                   setState(() => isLoading = false);
                   Navigator.pop(context);
-
                   if (error != null) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
                   } else {
@@ -162,10 +141,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         title: const Text('Confirmer la suppression'),
         content: Text('Voulez-vous vraiment supprimer ${user.displayName} ? Cette action est irréversible.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
           ElevatedButton(
             onPressed: () async {
               final error = await _userService.deleteUser(user.uid);
@@ -188,17 +164,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   Widget _buildUserCard(BuildContext context, AppUser user) {
     final roleColor = _getRoleColor(user.role);
     final roleIcon = _getRoleIcon(user.role);
+    final bool isActive = user.isActive;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      elevation: isActive ? 2.0 : 0.5,
+      color: isActive ? Colors.white : Colors.grey[200],
       child: ListTile(
         contentPadding: const EdgeInsets.all(16.0),
-        leading: CircleAvatar(
-          backgroundColor: roleColor.withOpacity(0.15),
-          child: Icon(roleIcon, color: roleColor),
-        ),
+        leading: CircleAvatar(backgroundColor: roleColor.withOpacity(0.15), child: Icon(roleIcon, color: roleColor)),
         title: Text(user.displayName, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,31 +180,40 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             const SizedBox(height: 4),
             Text(user.email ?? 'Email non fourni'),
             const SizedBox(height: 8),
-            Chip(
-              label: Text(user.role, style: const TextStyle(color: Colors.white)),
-              backgroundColor: roleColor,
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            Row(
+              children: [
+                Chip(label: Text(user.role, style: const TextStyle(color: Colors.white)), backgroundColor: roleColor, padding: const EdgeInsets.symmetric(horizontal: 4.0), materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text(isActive ? 'Actif' : 'Inactif'),
+                  backgroundColor: isActive ? Colors.green.shade100 : Colors.red.shade100, 
+                  labelStyle: TextStyle(color: isActive ? Colors.green.shade900 : Colors.red.shade900),
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0), materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
             ),
           ],
         ),
         trailing: user.role == 'Admin' ? null : PopupMenuButton<String>(
-          onSelected: (value) {
+          onSelected: (value) async {
             if (value == 'edit') {
               _showUserDialog(user: user);
             } else if (value == 'delete') {
               _confirmDelete(user);
+            } else if (value == 'toggleStatus') {
+                final error = await _userService.toggleUserStatus(user.uid, !user.isActive);
+                if (mounted && error != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                }
             }
           },
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'edit',
-              child: ListTile(leading: Icon(Icons.edit), title: Text('Modifier')),
+            const PopupMenuItem<String>(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Modifier'))),
+            PopupMenuItem<String>(
+                value: 'toggleStatus',
+                child: ListTile(leading: Icon(isActive ? Icons.block : Icons.check_circle_outline), title: Text(isActive ? 'Désactiver' : 'Activer'))
             ),
-            const PopupMenuItem<String>(
-              value: 'delete',
-              child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Supprimer', style: TextStyle(color: Colors.red))),
-            ),
+            const PopupMenuItem<String>(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Supprimer', style: TextStyle(color: Colors.red)))),
           ],
         ),
       ),

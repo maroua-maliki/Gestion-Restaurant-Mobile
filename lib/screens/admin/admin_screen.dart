@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:restaurantapp/screens/admin/menus/manage_menus_screen.dart';
+import 'package:restaurantapp/screens/admin/menus/manage_plats_screen.dart';
 import 'package:restaurantapp/screens/admin/tables/manage_tables_screen.dart';
 import 'package:restaurantapp/screens/admin/users/manage_users_screen.dart';
 import 'package:restaurantapp/widgets/admin_drawer.dart';
@@ -10,11 +10,10 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AdminDrawer(), // La barre latérale est toujours là
+      drawer: const AdminDrawer(),
       appBar: AppBar(
         title: const Text('Tableau de Bord Admin'),
       ),
-      // On remet la grille de cartes ici
       body: GridView.count(
         padding: const EdgeInsets.all(16.0),
         crossAxisCount: 2, 
@@ -26,7 +25,8 @@ class AdminScreen extends StatelessWidget {
             icon: Icons.restaurant_menu,
             label: 'Gérer les Menus',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ManageMenusScreen()));
+              // Corrigé pour pointer vers le nouvel écran des plats
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const ManagePlatsScreen()));
             },
           ),
           _buildDashboardCard(
