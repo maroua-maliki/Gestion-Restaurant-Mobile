@@ -3,6 +3,7 @@ import 'package:restaurantapp/screens/admin/menus/manage_categories_screen.dart'
 import 'package:restaurantapp/screens/admin/menus/manage_plats_screen.dart';
 import 'package:restaurantapp/screens/admin/tables/manage_tables_screen.dart';
 import 'package:restaurantapp/screens/admin/users/manage_users_screen.dart';
+import 'package:restaurantapp/screens/main_screen.dart';
 import 'package:restaurantapp/widgets/app_drawer_header.dart';
 import 'package:restaurantapp/widgets/logout_list_tile.dart';
 
@@ -15,6 +16,12 @@ class AdminDrawer extends StatelessWidget {
       child: Column(
         children: [
           const AppDrawerHeader(), // En-tête partagé
+          _buildDrawerItem(
+            icon: Icons.home,
+            title: 'Accueil',
+            onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen(userRole: 'Admin'))),
+          ),
+          const Divider(),
           _buildDrawerItem(
             // Icône mise à jour ici
             icon: Icons.collections_bookmark_outlined,
