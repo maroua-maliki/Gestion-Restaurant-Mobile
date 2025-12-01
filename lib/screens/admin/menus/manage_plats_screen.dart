@@ -78,7 +78,7 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
             padding: const EdgeInsets.all(12),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2, 
-              childAspectRatio: 0.8, // Ratio ajusté pour le switch
+              childAspectRatio: 0.8, 
               mainAxisSpacing: 12, 
               crossAxisSpacing: 12
             ),
@@ -125,7 +125,6 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
                   Text(data['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
                   Text('${data['price']} DH', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 14)),
-                  // --- RETOUR DE L'INTERRUPTEUR --- 
                   SwitchListTile(
                     title: const Text('Dispo.', style: TextStyle(fontSize: 12)),
                     value: isAvailable,
@@ -142,8 +141,254 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
     );
   }
 
-  void _showMenuItemDialog({DocumentSnapshot? menuItem}) { 
-    // Le code de la boîte de dialogue reste identique.
-    // ...
+  void _showMenuItemDialog({DocumentSnapshot? menuItem}) {
+    final _formKey = GlobalKey<FormState>();
+    final isEditing = menuItem != null;
+    var data = isEditing ? menuItem!.data() as Map<String, dynamic> : <String, dynamic>{};
+
+    final _nameController = TextEditingController(text: data['name']);
+    final _priceController = TextEditingController(text: data['price']?.toString());
+    final _descriptionController = TextEditingController(text: data['description']);
+    String? _dialogSelectedCategoryId = data['categoryId'];
+    File? _imageFile;
+    bool _isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(isEditing ? 'Modifier le plat' : 'Ajouter un plat'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(labelText: 'Nom du plat', border: OutlineInputBorder()),
+                        validator: (value) => value!.isEmpty ? 'Veuillez entrer un nom' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _priceController,
+                        decoration: const InputDecoration(labelText: 'Prix (DH)', border: OutlineInputBorder()),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        validator: (value) => value!.isEmpty ? 'Veuillez entrer un prix' : null,
+                      ),
+                       const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(labelText: 'Description (optionnel)', border: OutlineInputBorder()),
+                         maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+                      StreamBuilder<QuerySnapshot>(
+                        stream: _menuService.getCategories(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) return const CircularProgressIndicator();
+                          final categories = snapshot.data!.docs;
+                          if (_dialogSelectedCategoryId != null && !categories.any((doc) => doc.id == _dialogSelectedCategoryId)) {
+                            _dialogSelectedCategoryId = null; 
+                          }
+                          
+                          return DropdownButtonFormField<String>(
+                            value: _dialogSelectedCategoryId,
+                            hint: const Text('Choisir une catégorie'),
+                            isExpanded: true,
+                            decoration: const InputDecoration(border: OutlineInputBorder()),
+                            items: categories.map((DocumentSnapshot doc) {
+                              final catData = doc.data() as Map<String, dynamic>;
+                              return DropdownMenuItem<String>(
+                                value: doc.id,
+                                child: Text(catData['name'] ?? ''),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _dialogSelectedCategoryId = newValue;
+                              });
+                            },
+                            validator: (value) => value == null ? 'Veuillez choisir une catégorie' : null,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+
+                      // --- Sélecteur d'Image ---
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 80, height: 80,
+                                decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+                                child: _imageFile != null
+                                    ? Image.file(_imageFile!, fit: BoxFit.cover)
+                                    : (data['imageUrl'] != null && data['imageUrl'].isNotEmpty
+                                        ? Image.network(data['imageUrl'], fit: BoxFit.cover)
+                                        : const Icon(Icons.image, color: Colors.grey)),
+                              ),
+                              if(isEditing && data['imageUrl'] != null && data['imageUrl'].isNotEmpty)
+                                Positioned(
+                                  top: -10, right: -10,
+                                  child: CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: Colors.red,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete_forever, color: Colors.white, size: 12),
+                                      onPressed: () async {
+                                        final confirm = await _showImageDeleteConfirmationDialog();
+                                        if (confirm ?? false) {
+                                          setState(() => _isLoading = true);
+                                          await _menuService.deleteMenuItemImage(menuItem.id, data['imageUrl']);
+                                          setState(() {
+                                            data['imageUrl'] = null;
+                                            _isLoading = false;
+                                          });
+                                        }
+                                      }
+                                    ),
+                                  ), 
+                                ),
+                            ],
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final pickedFile = await _menuService.pickImage();
+                              if (pickedFile != null) {
+                                setState(() { _imageFile = pickedFile; });
+                              }
+                            },
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Choisir'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: <Widget>[
+                 if (_isLoading) const Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()),
+                if (!_isLoading) ...[
+                  if(isEditing) 
+                    TextButton(
+                      child: const Text('Supprimer Plat', style: TextStyle(color: Colors.red)),
+                      onPressed: (){
+                         Navigator.of(context).pop();
+                         _showDeleteConfirmationDialog(menuItem.id);
+                      }
+                    ),
+                  const Spacer(),
+                  TextButton(
+                    child: const Text('Annuler'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  ElevatedButton(
+                    child: Text(isEditing ? 'Mettre à jour' : 'Ajouter'),
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        setState(() { _isLoading = true; });
+
+                        String? imageUrl = data['imageUrl'];
+                        if (_imageFile != null) {
+                          imageUrl = await _menuService.uploadImage(_imageFile!, _nameController.text);
+                        }
+
+                        final menuItemData = {
+                          'name': _nameController.text,
+                          'price': double.tryParse(_priceController.text) ?? 0.0,
+                          'description': _descriptionController.text,
+                          'categoryId': _dialogSelectedCategoryId,
+                          'imageUrl': imageUrl ?? data['imageUrl'],
+                          if(isEditing) 'isAvailable': data['isAvailable'] ?? true,
+                          if(!isEditing) 'isAvailable': true,
+                        };
+
+                        try {
+                          if (isEditing) {
+                            await _menuService.updateMenuItem(menuItem.id, menuItemData);
+                          } else {
+                            await _menuService.addMenuItem(menuItemData);
+                          }
+                          Navigator.of(context).pop();
+                        } catch (e) {
+                           setState(() { _isLoading = false; });
+                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+                        }
+                      }
+                    },
+                  )
+                ]
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+  
+  Future<bool?> _showImageDeleteConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Supprimer l'image ?"),
+          content: const Text("Voulez-vous vraiment supprimer l'image de ce plat ? Le plat lui-même ne sera pas supprimé."),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Annuler'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text("Supprimer l'image"),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmationDialog(String menuItemId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmer la suppression'),
+          content: const Text('Êtes-vous sûr de vouloir supprimer ce plat ? Cette action est irréversible.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Annuler'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Supprimer le Plat'),
+              onPressed: () async {
+                try {
+                  await _menuService.deleteMenuItem(menuItemId);
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Plat supprimé avec succès'), backgroundColor: Colors.green),
+                  );
+                } catch (e) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur lors de la suppression : $e'), backgroundColor: Colors.red),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
