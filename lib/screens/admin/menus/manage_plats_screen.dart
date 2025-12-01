@@ -91,35 +91,77 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
 
               final items = List<DocumentSnapshot>.from(itemSnapshot.data!.docs);
 
-              // Trier les plats
-              items.sort((a, b) {
-                final aData = a.data() as Map<String, dynamic>;
-                final bData = b.data() as Map<String, dynamic>;
+              // Si une catégorie est sélectionnée, on affiche une grille simple
+              if (_selectedCategoryId != null) {
+                items.sort((a,b) { // Tri par nom
+                  final aName = (a.data() as Map<String, dynamic>)['name'] as String? ?? '';
+                  final bName = (b.data() as Map<String, dynamic>)['name'] as String? ?? '';
+                  return aName.toLowerCase().compareTo(bName.toLowerCase());
+                });
+                return GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.8,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) => _buildPlatCard(items[index]),
+                );
+              }
 
-                // Tri principal : par ordre de catégorie
-                final aOrder = getCategoryOrder(aData['categoryId'] as String?);
-                final bOrder = getCategoryOrder(bData['categoryId'] as String?);
-                int orderCompare = aOrder.compareTo(bOrder);
-                if (orderCompare != 0) {
-                  return orderCompare;
-                }
+              // --- Si on affiche tout, on groupe par catégorie avec des en-têtes ---
 
-                // Tri secondaire : par nom de plat
-                final aName = aData['name'] as String? ?? '';
-                final bName = bData['name'] as String? ?? '';
-                return aName.toLowerCase().compareTo(bName.toLowerCase());
+              // 1. Grouper les plats par categoryId
+              final groupedItems = <String, List<DocumentSnapshot>>{};
+              for (final item in items) {
+                final categoryId = (item.data() as Map<String, dynamic>)['categoryId'] as String?;
+                if (categoryId == null) continue;
+                (groupedItems[categoryId] ??= []).add(item);
+              }
+
+              // 2. Trier les plats par nom à l'intérieur de chaque groupe
+              groupedItems.forEach((_, itemList) {
+                itemList.sort((a, b) {
+                  final aName = (a.data() as Map<String, dynamic>)['name'] as String? ?? '';
+                  final bName = (b.data() as Map<String, dynamic>)['name'] as String? ?? '';
+                  return aName.toLowerCase().compareTo(bName.toLowerCase());
+                });
               });
 
-              return GridView.builder(
-                padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.8,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                ),
-                itemCount: items.length,
-                itemBuilder: (context, index) => _buildPlatCard(items[index]),
+              // 3. Trier les catégories dans l'ordre souhaité
+              final sortedCategoryIds = groupedItems.keys.toList()
+                ..sort((a, b) => getCategoryOrder(a).compareTo(getCategoryOrder(b)));
+
+              // 4. Construire la vue avec des en-têtes et des grilles
+              return CustomScrollView(
+                slivers: sortedCategoryIds.expand((categoryId) => [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                      child: Text(
+                        categoriesMap[categoryId]?['name'] ?? 'Inconnue',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    sliver: SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.8,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _buildPlatCard(groupedItems[categoryId]![index]),
+                        childCount: groupedItems[categoryId]!.length,
+                      ),
+                    ),
+                  ),
+                ]).toList(),
               );
             },
           );
@@ -302,8 +344,7 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
                               if (pickedFile != null) {
                                 setState(() { _imageFile = pickedFile; });
                               }
-                            },
-                            icon: const Icon(Icons.photo_library),
+                            },                            icon: const Icon(Icons.photo_library),
                             label: const Text('Choisir'),
                           ),
                         ],
