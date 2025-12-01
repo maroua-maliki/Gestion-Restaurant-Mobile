@@ -13,128 +13,143 @@ class ManagePlatsScreen extends StatefulWidget {
 
 class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
   final MenuService _menuService = MenuService();
-  String? _selectedCategoryId;
-  String? _selectedCategoryName;
-
-  IconData _getIconForCategory(String categoryName) {
-    final name = categoryName.toLowerCase();
-    if (name.contains('boisson')) return Icons.local_bar;
-    if (name.contains('dessert')) return Icons.cake;
-    if (name.contains('entrée')) return Icons.restaurant;
-    if (name.contains('plat')) return Icons.restaurant_menu;
-    return Icons.category_outlined;
-  }
+  String? _selectedCategoryId; // null signifie "Toutes les catégories"
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AdminDrawer(),
       appBar: AppBar(
-        title: Text(_selectedCategoryName ?? 'Gestion des Plats'),
-        actions: [
-          StreamBuilder<QuerySnapshot>(
-            stream: _menuService.getCategories(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const SizedBox.shrink();
-              final categories = snapshot.data!.docs;
-              return PopupMenuButton<Map<String, String?>>(
-                icon: const Icon(Icons.filter_list),
-                onSelected: (value) {
-                  setState(() {
-                    _selectedCategoryId = value['id'];
-                    _selectedCategoryName = value['name'];
-                  });
-                },
-                itemBuilder: (context) {
-                  return [
-                    const PopupMenuItem<Map<String, String?>>(value: {'id': null, 'name': null}, child: Text('Toutes les catégories')),
-                    ...categories.map((doc) {
-                      final categoryName = (doc.data() as Map)['name'] as String;
-                      return PopupMenuItem<Map<String, String?>>(value: {'id': doc.id, 'name': categoryName}, child: Text(categoryName));
-                    })
-                  ];
-                },
-              );
-            },
-          )
+        title: const Text('Gérer les Plats'),
+      ),
+      body: Column(
+        children: [
+          _buildFilterChips(),
+          Expanded(child: _buildPlatsView()),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _menuService.getCategories(),
-        builder: (context, categorySnapshot) {
-          if (!categorySnapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showMenuItemDialog(),
+        icon: const Icon(Icons.add),
+        label: const Text('Ajouter un Plat'),
+      ),
+    );
+  }
 
-          final categoriesMap = <String, Map<String, dynamic>>{
-            for (var doc in categorySnapshot.data!.docs) doc.id: doc.data() as Map<String, dynamic>
-          };
+  Widget _buildFilterChips() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _menuService.getCategories(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
+          ));
+        }
 
-          int getCategoryOrder(String? categoryId) {
+        final categories = snapshot.data!.docs;
+         final sortedCategories = List<DocumentSnapshot>.from(categories)..sort((a,b) {
+           final aName = ((a.data() as Map<String, dynamic>)?['name'] ?? '').toLowerCase();
+           final bName = ((b.data() as Map<String, dynamic>)?['name'] ?? '').toLowerCase();
+           final order = {'entrée': 1, 'plat': 2, 'dessert': 3, 'boisson': 4};
+           return (order[aName] ?? 5).compareTo(order[bName] ?? 5);
+        });
+
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+          color: Colors.transparent,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildChoiceChip(context, 'Tout', null),
+                const SizedBox(width: 8),
+                ...sortedCategories.map((doc) {
+                  final categoryName = (doc.data() as Map<String, dynamic>)['name'] ?? 'Inconnue';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _buildChoiceChip(context, categoryName, doc.id),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildChoiceChip(BuildContext context, String label, String? categoryId) {
+    final bool isSelected = _selectedCategoryId == categoryId;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (bool selected) {
+        if (selected) {
+          setState(() {
+            _selectedCategoryId = categoryId;
+          });
+        }
+      },
+      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+      selectedColor: Theme.of(context).primaryColor,
+      labelStyle: TextStyle(
+        color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+      ),
+      avatar: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.onPrimary, size: 16) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: isSelected ? Theme.of(context).primaryColor : Colors.transparent),
+      ),
+    );
+  }
+
+  Widget _buildPlatsView() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _menuService.getCategories(),
+      builder: (context, categorySnapshot) {
+        if (!categorySnapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+        final categoriesMap = <String, Map<String, dynamic>>{
+          for (var doc in categorySnapshot.data!.docs) doc.id: doc.data() as Map<String, dynamic>
+        };
+
+        int getCategoryOrder(String? categoryId) {
             final categoryName = categoriesMap[categoryId]?['name']?.toLowerCase() ?? '';
             if (categoryName.contains('entrée')) return 1;
             if (categoryName.contains('plat')) return 2;
             if (categoryName.contains('dessert')) return 3;
             if (categoryName.contains('boisson')) return 4;
-            return 5; // Pour les catégories non reconnues ou sans catégorie
-          }
+            return 5;
+        }
 
-          return StreamBuilder<QuerySnapshot>(
-            stream: _menuService.getMenuItems(_selectedCategoryId),
-            builder: (context, itemSnapshot) {
-              if (!itemSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (itemSnapshot.data!.docs.isEmpty) {
-                return const Center(child: Text("Aucun plat à afficher."));
-              }
+        return StreamBuilder<QuerySnapshot>(
+          stream: _menuService.getMenuItems(_selectedCategoryId),
+          builder: (context, itemSnapshot) {
+            if (itemSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (!itemSnapshot.hasData || itemSnapshot.data!.docs.isEmpty) {
+              return const Center(child: Text("Aucun plat à afficher.", style: TextStyle(fontSize: 16)));
+            }
 
-              final items = List<DocumentSnapshot>.from(itemSnapshot.data!.docs);
+            final items = itemSnapshot.data!.docs;
 
-              // Si une catégorie est sélectionnée, on affiche une grille simple
-              if (_selectedCategoryId != null) {
-                items.sort((a,b) { // Tri par nom
-                  final aName = (a.data() as Map<String, dynamic>)['name'] as String? ?? '';
-                  final bName = (b.data() as Map<String, dynamic>)['name'] as String? ?? '';
-                  return aName.toLowerCase().compareTo(bName.toLowerCase());
-                });
-                return GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.8,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) => _buildPlatCard(items[index]),
-                );
-              }
-
-              // --- Si on affiche tout, on groupe par catégorie avec des en-têtes ---
-
-              // 1. Grouper les plats par categoryId
+            // --- Si on AFFICHE TOUT, on groupe par catégorie ---
+            if (_selectedCategoryId == null) {
               final groupedItems = <String, List<DocumentSnapshot>>{};
               for (final item in items) {
                 final categoryId = (item.data() as Map<String, dynamic>)['categoryId'] as String?;
-                if (categoryId == null) continue;
-                (groupedItems[categoryId] ??= []).add(item);
+                if (categoryId != null) {
+                  (groupedItems[categoryId] ??= []).add(item);
+                }
               }
 
-              // 2. Trier les plats par nom à l'intérieur de chaque groupe
-              groupedItems.forEach((_, itemList) {
-                itemList.sort((a, b) {
-                  final aName = (a.data() as Map<String, dynamic>)['name'] as String? ?? '';
-                  final bName = (b.data() as Map<String, dynamic>)['name'] as String? ?? '';
-                  return aName.toLowerCase().compareTo(bName.toLowerCase());
-                });
-              });
-
-              // 3. Trier les catégories dans l'ordre souhaité
               final sortedCategoryIds = groupedItems.keys.toList()
                 ..sort((a, b) => getCategoryOrder(a).compareTo(getCategoryOrder(b)));
 
-              // 4. Construire la vue avec des en-têtes et des grilles
               return CustomScrollView(
                 slivers: sortedCategoryIds.expand((categoryId) => [
                   SliverToBoxAdapter(
@@ -150,10 +165,7 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12.0),
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.8,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
+                        crossAxisCount: 2, childAspectRatio: 0.8, mainAxisSpacing: 12, crossAxisSpacing: 12,
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) => _buildPlatCard(groupedItems[categoryId]![index]),
@@ -163,15 +175,26 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
                   ),
                 ]).toList(),
               );
-            },
-          );
-        },
-      ),
-       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showMenuItemDialog(),
-        icon: const Icon(Icons.add),
-        label: const Text('Ajouter un Plat'),
-      ),
+            }
+            // --- Si une CATÉGORIE EST SÉLECTIONNÉE, on affiche une grille simple ---
+            else {
+              items.sort((a,b) {
+                  final aName = (a.data() as Map<String, dynamic>)?['name'] ?? '';
+                  final bName = (b.data() as Map<String, dynamic>)?['name'] ?? '';
+                  return aName.toLowerCase().compareTo(bName.toLowerCase());
+                });
+              return GridView.builder(
+                padding: const EdgeInsets.all(12),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, childAspectRatio: 0.8, mainAxisSpacing: 12, crossAxisSpacing: 12,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) => _buildPlatCard(items[index]),
+              );
+            }
+          },
+        );
+      },
     );
   }
 
@@ -198,30 +221,30 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.fromLTRB(8,8,8,0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(data['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
                   Text('${data['price']} DH', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 14)),
-                  SwitchListTile(
+                ],
+              ),
+            ),
+             SwitchListTile(
                     title: const Text('Dispo.', style: TextStyle(fontSize: 12)),
                     value: isAvailable,
                     onChanged: (val) => _menuService.updateMenuItem(doc.id, {'isAvailable': val}),
                     dense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ],
-              ),
-            ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+             ),
           ],
         ),
       ),
     );
   }
 
-  void _showMenuItemDialog({DocumentSnapshot? menuItem}) {
+ void _showMenuItemDialog({DocumentSnapshot? menuItem}) {
     final _formKey = GlobalKey<FormState>();
     final isEditing = menuItem != null;
     var data = isEditing ? menuItem!.data() as Map<String, dynamic> : <String, dynamic>{};
