@@ -60,21 +60,68 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _menuService.getMenuItems(_selectedCategoryId),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          if (snapshot.data!.docs.isEmpty) return const Center(child: Text("Aucun plat à afficher."));
-          
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, 
-              childAspectRatio: 0.8, 
-              mainAxisSpacing: 12, 
-              crossAxisSpacing: 12
-            ),
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) => _buildPlatCard(snapshot.data!.docs[index]),
+        stream: _menuService.getCategories(),
+        builder: (context, categorySnapshot) {
+          if (!categorySnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final categoriesMap = <String, Map<String, dynamic>>{
+            for (var doc in categorySnapshot.data!.docs) doc.id: doc.data() as Map<String, dynamic>
+          };
+
+          int getCategoryOrder(String? categoryId) {
+            final categoryName = categoriesMap[categoryId]?['name']?.toLowerCase() ?? '';
+            if (categoryName.contains('entrée')) return 1;
+            if (categoryName.contains('plat')) return 2;
+            if (categoryName.contains('dessert')) return 3;
+            if (categoryName.contains('boisson')) return 4;
+            return 5; // Pour les catégories non reconnues ou sans catégorie
+          }
+
+          return StreamBuilder<QuerySnapshot>(
+            stream: _menuService.getMenuItems(_selectedCategoryId),
+            builder: (context, itemSnapshot) {
+              if (!itemSnapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (itemSnapshot.data!.docs.isEmpty) {
+                return const Center(child: Text("Aucun plat à afficher."));
+              }
+
+              final items = List<DocumentSnapshot>.from(itemSnapshot.data!.docs);
+
+              // Trier les plats
+              items.sort((a, b) {
+                final aData = a.data() as Map<String, dynamic>;
+                final bData = b.data() as Map<String, dynamic>;
+
+                // Tri principal : par ordre de catégorie
+                final aOrder = getCategoryOrder(aData['categoryId'] as String?);
+                final bOrder = getCategoryOrder(bData['categoryId'] as String?);
+                int orderCompare = aOrder.compareTo(bOrder);
+                if (orderCompare != 0) {
+                  return orderCompare;
+                }
+
+                // Tri secondaire : par nom de plat
+                final aName = aData['name'] as String? ?? '';
+                final bName = bData['name'] as String? ?? '';
+                return aName.toLowerCase().compareTo(bName.toLowerCase());
+              });
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(12),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.8,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) => _buildPlatCard(items[index]),
+              );
+            },
           );
         },
       ),
