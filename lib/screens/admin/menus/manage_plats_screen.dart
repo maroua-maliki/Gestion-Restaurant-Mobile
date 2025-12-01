@@ -30,16 +30,7 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
     return Scaffold(
       drawer: const AdminDrawer(),
       appBar: AppBar(
-        title: _selectedCategoryName == null
-            ? const Text('Gestion des Plats')
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(_getIconForCategory(_selectedCategoryName!)),
-                  const SizedBox(width: 8),
-                  Text(_selectedCategoryName!),
-                ],
-              ),
+        title: Text(_selectedCategoryName ?? 'Gestion des Plats'),
         actions: [
           StreamBuilder<QuerySnapshot>(
             stream: _menuService.getCategories(),
@@ -374,7 +365,7 @@ class _ManagePlatsScreenState extends State<ManagePlatsScreen> {
               onPressed: () async {
                 try {
                   await _menuService.deleteMenuItem(menuItemId);
-                  Navigator.of(context).pop();
+                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Plat supprimé avec succès'), backgroundColor: Colors.green),
                   );
