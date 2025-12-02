@@ -65,7 +65,6 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
   }
 
   Widget _buildTableCard(DocumentSnapshot tableDoc) {
-    // ... (code de la carte, pas de changement)
     final tableData = tableDoc.data() as Map<String, dynamic>;
     final bool isAvailable = tableData['isAvailable'] ?? true;
     final String? serverId = tableData['assignedServerId'];
@@ -101,7 +100,6 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
   }
 
   Widget _buildStatusChip(String? serverId) {
-    // ... (code du chip, pas de changement)
      if (serverId == null || serverId.isEmpty) {
       return Chip(
         label: const Text('Libre'),
@@ -128,7 +126,6 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
   }
 
   void _showTableDialog({DocumentSnapshot? table}) {
-    // ... (code de la boîte de dialogue)
     final isEditing = table != null;
     final tableData = isEditing ? table.data() as Map<String, dynamic> : {};
     final formKey = GlobalKey<FormState>();
@@ -155,7 +152,6 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
                       TextFormField(controller: capacityController, decoration: const InputDecoration(labelText: 'Capacité', border: OutlineInputBorder()), keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Requis' : null),
                       SwitchListTile(title: const Text('Disponible'), value: isAvailable, onChanged: (val) => setState(() => isAvailable = val)),
                       StreamBuilder<List<AppUser>>(
-                          // *** LA MODIFICATION EST ICI ***
                           stream: _userService.getUsers().map((users) => users.where((u) => u.role == 'Serveur' && u.isActive).toList()),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) return const CircularProgressIndicator();
@@ -184,11 +180,17 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      final data = {'number': numberController.text, 'capacity': int.parse(capacityController.text), 'isAvailable': isAvailable, 'assignedServerId': selectedServerId};
+                      final data = {
+                        'number': numberController.text,
+                        'capacity': int.parse(capacityController.text),
+                        'isAvailable': isAvailable,
+                        'assignedServerId': selectedServerId
+                      };
                       if (isEditing) {
                         await table.reference.update(data);
                       } else {
-                        await _firestore.collection('tables').add(data);
+                        // Corrected call to addTable
+                        await _tableService.addTable(numberController.text, int.parse(capacityController.text));
                       }
                       if (mounted) Navigator.pop(context);
                     }
@@ -203,6 +205,29 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
     );
   }
 
-  void _confirmDelete(DocumentSnapshot table) { /* ... */ }
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  void _confirmDelete(DocumentSnapshot table) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirmer la suppression'),
+          content: Text("Êtes-vous sûr de vouloir supprimer la table n°${table['number']} ? Cette action est irréversible."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Annuler"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await _tableService.deleteTable(table.id);
+                if (mounted) Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text("Supprimer"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
