@@ -17,9 +17,15 @@ dependencies:
   cloud_firestore: ^4.15.8
   cloud_functions: ^4.6.8
   firebase_storage: ^11.6.9 # Pour le stockage des images
+  # firebase_app_check: ^0.2.1+1 # Supprime car non voulu
   
   # Package pour la sélection d'images
   image_picker: ^1.0.7
+
+  # Package pour les notifications sonores
+  audioplayers: ^6.0.0
+  fl_chart: ^1.1.1
+  google_fonts: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -28,3 +34,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/sounds/
