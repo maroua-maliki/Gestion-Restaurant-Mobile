@@ -48,7 +48,7 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -138,7 +138,7 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: isNew
-            ? Border.all(color: AppColors.primary, width: 2) // Warning -> Primary for stronger emphasis in warm theme? Or Keep warning? Let's use Primary (Orange) for new
+            ? Border.all(color: AppColors.primary, width: 2)
             : isInProgress
                 ? Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1)
                 : null,
@@ -146,7 +146,7 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
           BoxShadow(
             color: isNew
                 ? AppColors.primary.withOpacity(0.15)
-                : Colors.black.withValues(alpha: 0.05),
+                : Colors.black.withOpacity(0.05),
             blurRadius: isNew ? 12 : 8,
             offset: const Offset(0, 4),
           ),
@@ -179,7 +179,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
   Widget _buildOrderHeader(OrderModel order, bool isNew) {
     return Row(
       children: [
-        // Order type icon
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
@@ -193,7 +192,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
           ),
         ),
         const SizedBox(width: 12),
-        // Order info
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +216,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
             ],
           ),
         ),
-        // Items count
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -246,22 +243,51 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text(
-                    '${item.quantity}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
-                      fontSize: 13,
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                          ? Image.network(
+                              item.imageUrl!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => 
+                                Container(
+                                  color: AppColors.secondary.withOpacity(0.1),
+                                  child: const Icon(Icons.restaurant_menu_rounded, color: AppColors.secondary, size: 20),
+                                ),
+                            )
+                          : Container(
+                              color: AppColors.secondary.withOpacity(0.1),
+                              child: const Icon(Icons.restaurant_menu_rounded, color: AppColors.secondary, size: 20),
+                            ),
                     ),
-                  ),
+                    Positioned(
+                      top: -4, 
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.secondary,
+                          border: Border.all(color: AppColors.surface, width: 1.5),
+                        ),
+                        child: Text(
+                          '${item.quantity}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -296,7 +322,7 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
               order.notes!,
               style: TextStyle(
                 fontStyle: FontStyle.italic,
-                color: AppColors.warning, // Fixed text color visibility
+                color: AppColors.warning, 
                 fontSize: 13,
               ),
             ),
@@ -316,7 +342,7 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
           icon: const Icon(Icons.play_arrow_rounded, size: 20),
           label: const Text('Commencer la préparation'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary, // Info -> Primary (Orange is action color)
+            backgroundColor: AppColors.primary, 
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -397,7 +423,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
         ),
         child: Column(
           children: [
-            // Handle
             Container(
               width: 40,
               height: 4,
@@ -407,7 +432,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -431,7 +455,7 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
                       children: [
                         Text(
                           order.type == OrderType.dineIn ? 'Table ${order.tableNumber ?? "N/A"}' : 'À emporter',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 20),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 20),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -445,7 +469,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
                 ],
               ),
             ),
-            // Info bar
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.all(12),
@@ -460,18 +483,16 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
                   Container(width: 1, height: 24, color: AppColors.border),
                   _buildInfoItem(Icons.restaurant_menu_rounded, '${order.items.length} plat(s)'),
                   Container(width: 1, height: 24, color: AppColors.border),
-                  _buildInfoItem(Icons.euro_rounded, '${order.totalAmount.toStringAsFixed(2)} €'),
+                  _buildInfoItem(Icons.payments_rounded, '${order.totalAmount.toStringAsFixed(2)} DH'),
                 ],
               ),
             ),
-            // Notes
             if (order.notes != null && order.notes!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: _buildNotesSection(order),
               ),
             const SizedBox(height: 16),
-            // Items list header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -486,7 +507,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
               ),
             ),
             const SizedBox(height: 8),
-            // Items list
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -502,32 +522,64 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
                     ),
                     child: Row(
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.secondary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${item.quantity}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: AppColors.secondary,
+                        SizedBox(
+                          width: 56,
+                          height: 56,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                                    ? Image.network(
+                                        item.imageUrl!,
+                                        width: 56,
+                                        height: 56,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                          Container(
+                                            width: 56, height: 56,
+                                            color: AppColors.secondary.withOpacity(0.1),
+                                            child: const Icon(Icons.restaurant_menu_rounded, color: AppColors.secondary, size: 28),
+                                          ),
+                                      )
+                                    : Container(
+                                        width: 56, height: 56,
+                                        color: AppColors.secondary.withOpacity(0.1),
+                                        child: const Icon(Icons.restaurant_menu_rounded, color: AppColors.secondary, size: 28),
+                                      ),
                               ),
-                            ),
+                              Positioned(
+                                top: -5,
+                                right: -5,
+                                child: Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.secondary,
+                                    border: Border.all(color: AppColors.surface, width: 2),
+                                  ),
+                                  child: Text(
+                                    '${item.quantity}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 item.name,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                               ),
                               if (item.notes != null && item.notes!.isNotEmpty)
                                 Container(
@@ -559,7 +611,6 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
                 },
               ),
             ),
-            // Action buttons
             Padding(
               padding: const EdgeInsets.all(20),
               child: _buildDetailActionButton(order),
@@ -610,7 +661,7 @@ class _ChefScreenState extends State<ChefScreen> with SingleTickerProviderStateM
           icon: const Icon(Icons.play_arrow_rounded),
           label: const Text('Commencer la préparation'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary, // Info -> Primary
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
