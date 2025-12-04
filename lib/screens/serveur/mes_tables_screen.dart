@@ -98,7 +98,7 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
   Widget _buildTableCard(DocumentSnapshot tableDoc) {
     final tableData = tableDoc.data() as Map<String, dynamic>;
     final bool isAvailable = tableData['isAvailable'] ?? true;
-    
+
     final statusColor = isAvailable ? AppColors.success : AppColors.error;
 
     return Card(
@@ -229,8 +229,8 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
               child: Text(
                 'Table ${tableData['number']}',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: 20, 
-                  fontWeight: FontWeight.bold
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold
                 ),
               ),
             ),
@@ -388,7 +388,7 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
                 ),
               ],
             ),
-            
+
             if (order.notes != null && order.notes!.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
@@ -407,11 +407,11 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 24),
             const Text('Articles', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 12),
-            
+
             Expanded(
               child: ListView.separated(
                 controller: scrollController,
