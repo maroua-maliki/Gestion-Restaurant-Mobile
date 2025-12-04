@@ -33,8 +33,8 @@ class AdminDrawer extends StatelessWidget {
                   _buildSectionHeader('Navigation'),
                   _buildDrawerItem(
                     context: context,
-                    icon: Icons.dashboard_rounded,
-                    title: 'Tableau de bord',
+                    icon: Icons.home_rounded,
+                    title: 'Accueil',
                     onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen(userRole: 'Admin'))),
                   ),
                   const Divider(color: _gold, indent: 20, endIndent: 20, thickness: 0.5),

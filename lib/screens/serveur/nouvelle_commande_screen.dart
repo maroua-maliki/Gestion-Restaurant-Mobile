@@ -17,6 +17,7 @@ enum OrderStep { selectType, selectTable, selectItems }
 const Color _warmOrange = Color(0xFFE85D04);
 const Color _deepBrown = Color(0xFF3D2914);
 const Color _cream = Color(0xFFFFF8F0);
+const Color _gold = Color(0xFFD4A574);
 
 class NouvelleCommandeScreen extends StatefulWidget {
   final String? preselectedTableId;
@@ -86,7 +87,6 @@ class _NouvelleCommandeScreenState extends State<NouvelleCommandeScreen> {
     setState(() {
       switch (_currentStep) {
         case OrderStep.selectType:
-          // This case is now handled by the drawer button
           break;
         case OrderStep.selectTable:
           _currentStep = OrderStep.selectType;
@@ -211,13 +211,13 @@ class _NouvelleCommandeScreenState extends State<NouvelleCommandeScreen> {
           _appBarTitle,
           style: GoogleFonts.playfairDisplay(
             fontWeight: FontWeight.bold,
-            color: _deepBrown,
+            color: _cream,
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: _cream,
-        foregroundColor: _warmOrange,
+        backgroundColor: _deepBrown,
+        foregroundColor: _cream,
         surfaceTintColor: Colors.transparent,
         leading: isFirstStep
             ? Builder(
@@ -445,8 +445,8 @@ class _NouvelleCommandeScreenState extends State<NouvelleCommandeScreen> {
       children: [
         Column(
           children: [
-            _buildCategorySelector(),
-            Expanded(child: _buildMenuItemsGrid()),
+            _buildFilterChips(),
+            Expanded(child: _buildPlatsView()),
           ],
         ),
         Positioned(
@@ -456,6 +456,319 @@ class _NouvelleCommandeScreenState extends State<NouvelleCommandeScreen> {
           child: _buildCartFloatingButton(),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _menuService.getCategories(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox(height: 70);
+        }
+
+        final categories = snapshot.data!.docs;
+        final sortedCategories = List<DocumentSnapshot>.from(categories)..sort((a, b) {
+          final aName = ((a.data() as Map<String, dynamic>)?['name'] ?? '').toLowerCase();
+          final bName = ((b.data() as Map<String, dynamic>)?['name'] ?? '').toLowerCase();
+          final order = {'entrée': 1, 'plat': 2, 'dessert': 3, 'boisson': 4};
+          return (order[aName] ?? 5).compareTo(order[bName] ?? 5);
+        });
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: _deepBrown.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildChoiceChip(context, 'Tout', null),
+                const SizedBox(width: 10),
+                ...sortedCategories.map((doc) {
+                  final categoryName = (doc.data() as Map<String, dynamic>)['name'] ?? 'Inconnue';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 10.0),
+                    child: _buildChoiceChip(context, categoryName, doc.id),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildChoiceChip(BuildContext context, String label, String? categoryId) {
+    final bool isSelected = _selectedCategoryId == categoryId;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedCategoryId = categoryId),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(colors: [_warmOrange, Color(0xFFD4500A)])
+              : null,
+          color: isSelected ? null : _cream,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : _gold.withOpacity(0.4),
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: _warmOrange.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              const Icon(Icons.check_rounded, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: isSelected ? Colors.white : _deepBrown,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlatsView() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _menuService.getCategories(),
+      builder: (context, categorySnapshot) {
+        if (!categorySnapshot.hasData) {
+          return Center(child: CircularProgressIndicator(color: _warmOrange));
+        }
+
+        final categoriesMap = <String, Map<String, dynamic>>{
+          for (var doc in categorySnapshot.data!.docs) doc.id: doc.data() as Map<String, dynamic>
+        };
+
+        int getCategoryOrder(String? categoryId) {
+          final categoryName = categoriesMap[categoryId]?['name']?.toLowerCase() ?? '';
+          if (categoryName.contains('entrée')) return 1;
+          if (categoryName.contains('plat')) return 2;
+          if (categoryName.contains('dessert')) return 3;
+          if (categoryName.contains('boisson')) return 4;
+          return 5;
+        }
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: _menuService.getMenuItems(_selectedCategoryId),
+          builder: (context, itemSnapshot) {
+            if (itemSnapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator(color: _warmOrange));
+            }
+            if (!itemSnapshot.hasData || itemSnapshot.data!.docs.isEmpty) {
+              return Center(child: Text("Aucun plat à afficher."));
+            }
+
+            final items = itemSnapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return data['isAvailable'] == true;
+            }).toList();
+
+            if (_selectedCategoryId == null) {
+              final groupedItems = <String, List<DocumentSnapshot>>{};
+              for (final item in items) {
+                final categoryId = (item.data() as Map<String, dynamic>)['categoryId'] as String?;
+                if (categoryId != null) {
+                  (groupedItems[categoryId] ??= []).add(item);
+                }
+              }
+
+              final sortedCategoryIds = groupedItems.keys.toList()
+                ..sort((a, b) => getCategoryOrder(a).compareTo(getCategoryOrder(b)));
+
+              return CustomScrollView(
+                slivers: [
+                  ...sortedCategoryIds.expand((categoryId) => [
+                        SliverToBoxAdapter(
+                          child: _buildCategoryHeader(
+                              categoriesMap[categoryId]?['name'] ?? 'Inconnue'),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.75, 
+                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 14,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) => _buildMenuItemCard(groupedItems[categoryId]![index]),
+                              childCount: groupedItems[categoryId]!.length,
+                            ),
+                          ),
+                        ),
+                      ]),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: 120), // Padding for the floating button
+                  ),
+                ],
+              );
+            } else {
+              return GridView.builder(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 120),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.75, 
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) => _buildMenuItemCard(items[index]),
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoryHeader(String categoryName) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 14),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [_warmOrange, _gold],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            categoryName,
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: _deepBrown,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+Widget _buildMenuItemCard(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final imageUrl = data['imageUrl'];
+    final quantity = _cartItems.where((cartItem) => cartItem.menuItemId == doc.id).fold(0, (sum, item) => sum + item.quantity);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _gold.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: _deepBrown.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _addToCart(data, doc.id),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    (imageUrl != null && imageUrl.isNotEmpty)
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => Container(
+                              color: _cream,
+                              child: Icon(Icons.broken_image_rounded, size: 40, color: Colors.grey[400]),
+                            ),
+                          )
+                        : Container(
+                            color: _cream,
+                            child: Icon(Icons.restaurant_rounded, size: 40, color: _gold.withOpacity(0.5)),
+                          ),
+                    if (quantity > 0)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Badge(
+                          label: Text('$quantity'),
+                          backgroundColor: _warmOrange,
+                          textColor: Colors.white,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        data['name'] ?? '',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: _deepBrown,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${data['price']} DH',
+                        style: GoogleFonts.inter(
+                          color: _warmOrange,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -513,7 +826,10 @@ class _NouvelleCommandeScreenState extends State<NouvelleCommandeScreen> {
             width: 40,
             height: 4,
             margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(color: _deepBrown.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
+            decoration: BoxDecoration(
+              color: _deepBrown.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -624,129 +940,6 @@ class _NouvelleCommandeScreenState extends State<NouvelleCommandeScreen> {
             },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategorySelector() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _menuService.getCategories(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        final categories = snapshot.data!.docs;
-        if (_selectedCategoryId == null && categories.isNotEmpty) {
-          _selectedCategoryId = categories.first.id;
-        }
-        return Container(
-          height: 60,
-          color: _cream.withOpacity(0.8),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              final isSelected = _selectedCategoryId == category.id;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
-                  label: Text(category['name'], style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isSelected ? Colors.white : _deepBrown)),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) setState(() => _selectedCategoryId = category.id);
-                  },
-                  backgroundColor: _deepBrown.withOpacity(0.05),
-                  selectedColor: _warmOrange,
-                  showCheckmark: false,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: _deepBrown.withOpacity(0.1)),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMenuItemsGrid() {
-    if (_selectedCategoryId == null) return const Center(child: Text("Sélectionnez une catégorie"));
-    return StreamBuilder<QuerySnapshot>(
-      stream: _menuService.getMenuItems(_selectedCategoryId!),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _warmOrange));
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text("Aucun plat dans cette catégorie.", style: GoogleFonts.inter(color: _deepBrown)));
-        }
-        final menuItems = snapshot.data!.docs;
-        return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Padding at bottom for FAB
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.8,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-          ),
-          itemCount: menuItems.length,
-          itemBuilder: (context, index) {
-            final item = menuItems[index];
-            final itemData = item.data() as Map<String, dynamic>;
-            final quantity = _cartItems.where((cartItem) => cartItem.menuItemId == item.id).fold(0, (sum, item) => sum + item.quantity);
-            return _buildMenuItemCard(itemData, item.id, quantity);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildMenuItemCard(Map<String, dynamic> itemData, String itemId, int quantity) {
-    return GestureDetector(
-      onTap: () => _addToCart(itemData, itemId),
-      child: Card(
-        elevation: 0,
-        color: _deepBrown.withOpacity(0.03),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    itemData['imageUrl'] ?? '',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.fastfood, size: 48, color: _deepBrown),
-                  ),
-                  if (quantity > 0)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Badge(
-                        label: Text('$quantity'),
-                        backgroundColor: _warmOrange,
-                        textColor: Colors.white,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(itemData['name'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: _deepBrown), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text('${itemData['price']} DH', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: _warmOrange)),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
