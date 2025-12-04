@@ -55,13 +55,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           'Statistiques',
           style: GoogleFonts.playfairDisplay(
             fontWeight: FontWeight.bold,
-            color: _deepBrown,
+            color: Colors.white,
           ),
         ),
-        backgroundColor: _cream,
-        iconTheme: const IconThemeData(color: _deepBrown),
+        backgroundColor: _deepBrown,
+        foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        iconTheme: const IconThemeData(color: _warmOrange),
       ),
       drawer: const AdminDrawer(),
       body: Container(
