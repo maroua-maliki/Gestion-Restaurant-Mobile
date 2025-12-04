@@ -5,6 +5,11 @@ import 'package:restaurantapp/services/table_service.dart';
 import 'package:restaurantapp/services/user_service.dart';
 import 'package:restaurantapp/widgets/admin_drawer.dart';
 
+const Color _warmOrange = Color(0xFFE85D04);
+const Color _deepBrown = Color(0xFF3D2914);
+const Color _cream = Color(0xFFFFF8F0);
+const Color _gold = Color(0xFFD4A574);
+
 class ManageTablesScreen extends StatefulWidget {
   const ManageTablesScreen({super.key});
 
@@ -117,9 +122,9 @@ class _ManageTablesScreenState extends State<ManageTablesScreen> {
         if (!userSnapshot.hasData || !userSnapshot.data!.exists) return const SizedBox.shrink();
         final userData = userSnapshot.data!.data() as Map<String, dynamic>;
         return Chip(
-          avatar: const Icon(Icons.person, size: 16),
-          label: Text(userData['displayName'] ?? 'Serveur', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
-          backgroundColor: Colors.grey.shade200,
+          avatar: const Icon(Icons.person, size: 16, color: _deepBrown),
+          label: Text(userData['displayName'] ?? 'Serveur', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: _deepBrown, fontWeight: FontWeight.bold)),
+          backgroundColor: _gold.withOpacity(0.5),
           side: BorderSide.none,
           padding: const EdgeInsets.symmetric(horizontal: 4),
         );

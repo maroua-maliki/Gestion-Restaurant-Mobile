@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restaurantapp/core/theme/app_theme.dart';
-import 'package:restaurantapp/core/widgets/app_drawer.dart';
 import 'package:restaurantapp/models/order_model.dart';
 import 'package:restaurantapp/screens/admin/admin_screen.dart';
 import 'package:restaurantapp/screens/chef/chef_screen.dart';
@@ -14,6 +13,7 @@ import 'package:restaurantapp/screens/serveur/serveur_screen.dart';
 import 'package:restaurantapp/screens/settings/settings_screen.dart';
 import 'package:restaurantapp/services/order_service.dart';
 import 'package:restaurantapp/widgets/admin_drawer.dart';
+import 'package:restaurantapp/widgets/chef_drawer.dart';
 import 'package:restaurantapp/widgets/serveur_drawer.dart';
 
 class MainScreen extends StatefulWidget {
@@ -550,39 +550,17 @@ class _MainScreenState extends State<MainScreen> {
       return const AdminDrawer();
     } else if (widget.userRole == 'Serveur') {
       return const ServeurDrawer();
-    } else {
-      return AppDrawer(
-        userRole: widget.userRole,
-        userName: _userName,
-        userEmail: _userEmail,
-        menuItems: _getDrawerMenuItems(),
-        selectedIndex: _selectedIndex == 0 ? 0 : null,
-      );
-    }
-  }
-
-  List<DrawerMenuItem> _getDrawerMenuItems() {
-    switch (widget.userRole) {
-      case 'Chef':
-        return [
-          DrawerMenuItem(
-            icon: Icons.dashboard_rounded,
-            title: 'Commandes en cuisine',
-            onTap: () {
-              Navigator.pop(context);
-              setState(() => _selectedIndex = 0);
-            },
-          ),
-        ];
-      default:
-        return [];
-    }
+    } else if (widget.userRole == 'Chef') {
+      return const ChefDrawer();
+    } 
+    // Default empty drawer for robustness, though this case should not be reached
+    return const Drawer();
   }
 
   @override
   Widget build(BuildContext context) {
     final pages = _buildPages();
-    final useAdminStyle = widget.userRole == 'Admin' || widget.userRole == 'Serveur';
+    final useAdminStyle = widget.userRole == 'Admin' || widget.userRole == 'Serveur' || widget.userRole == 'Chef';
 
     return Scaffold(
       backgroundColor: useAdminStyle ? _cream : AppColors.background,
