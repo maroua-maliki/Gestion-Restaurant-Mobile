@@ -144,6 +144,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
+  // Return a readable text color for a given background color.
+  // Uses luminance to pick white or black for sufficient contrast.
+  Color _textColorForBackground(Color background) {
+    return background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+  }
+
   Widget _buildPeriodSelector() {
     return Container(
       decoration: BoxDecoration(
@@ -314,7 +320,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     titleStyle: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: _textColorForBackground(colors[i % colors.length]),
                     ),
                   );
                 }),
@@ -379,7 +385,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               width: 20,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
               backDrawRodData: BackgroundBarChartRodData(
-                show: true,
+                        show: false,
                 toY: maxValue * 1.2,
                 color: _lightBrown.withValues(alpha: 0.1),
               ),
@@ -389,7 +395,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       }),
       bottomTitles: sortedServers.map((e) => e.key).toList(),
       maxValue: maxValue * 1.2,
-      formatValue: (v) => v.toInt().toString(),
+      formatValue: (v) => v.toStringAsFixed(0),
     );
   }
 
@@ -416,7 +422,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               width: 20,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
               backDrawRodData: BackgroundBarChartRodData(
-                show: true,
+                        show: false,
                 toY: maxValue * 1.2,
                 color: _warmOrange.withValues(alpha: 0.1),
               ),
@@ -426,7 +432,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       }),
       bottomTitles: sortedServers.map((e) => e.key).toList(),
       maxValue: maxValue * 1.2,
-      formatValue: (v) => v.toInt().toString(),
+      formatValue: (v) => v.toStringAsFixed(0),
     );
   }
   
@@ -513,18 +519,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index < bottomTitles.length) {
+                        final index = value.round().clamp(0, bottomTitles.length - 1);
+                        if (index >= 0 && index < bottomTitles.length) {
                           final name = bottomTitles[index];
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              name.length > 6 ? '${name.substring(0, 6)}.' : name,
+                              name.length > 8 ? '${name.substring(0, 8)}.' : name,
                               style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[600]),
                             ),
                           );
                         }
-                        return const Text('');
+                        return const SizedBox.shrink();
                       },
                       reservedSize: 30,
                     ),
@@ -532,12 +538,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 40,
+                      reservedSize: 44,
                       getTitlesWidget: (value, meta) {
-                        if (value == 0) return const SizedBox.shrink();
                         return Text(
                           formatValue(value),
-                          style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
+                          style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[700]),
                         );
                       },
                     ),
