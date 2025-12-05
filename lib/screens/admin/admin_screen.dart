@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:restaurantapp/screens/admin/menus/manage_categories_screen.dart';
 import 'package:restaurantapp/screens/admin/menus/manage_plats_screen.dart';
+import 'package:restaurantapp/screens/admin/orders/admin_orders_screen.dart';
 import 'package:restaurantapp/screens/admin/statistics/statistics_screen.dart';
 import 'package:restaurantapp/screens/admin/tables/manage_tables_screen.dart';
 import 'package:restaurantapp/screens/admin/users/manage_users_screen.dart';
@@ -57,13 +57,13 @@ class AdminScreen extends StatelessWidget {
                   childAspectRatio: constraints.maxWidth > 400 ? 1.0 : 0.95,
                   children: [
                     _RestaurantDashboardCard(
-                      title: 'Catégories',
-                      subtitle: 'Menu',
-                      icon: Icons.category_rounded,
+                      title: 'Commandes',
+                      subtitle: 'Suivi',
+                      icon: Icons.receipt_long_rounded,
                       color: _warmOrange,
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ManageCategoriesScreen()),
+                        MaterialPageRoute(builder: (_) => const AdminOrdersScreen()),
                       ),
                     ),
                     _RestaurantDashboardCard(
@@ -125,7 +125,7 @@ class AdminScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _deepBrown.withValues(alpha: 0.3),
+            color: _deepBrown.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -140,7 +140,7 @@ class AdminScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: _warmOrange.withValues(alpha: 0.4),
+                  color: _warmOrange.withOpacity(0.4),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -175,7 +175,7 @@ class AdminScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.restaurant, color: _gold, size: 24),
@@ -191,7 +191,7 @@ class AdminScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: _warmOrange.withValues(alpha: 0.1),
+            color: _warmOrange.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: _warmOrange, size: 20),
@@ -211,7 +211,7 @@ class AdminScreen extends StatelessWidget {
             height: 2,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [_gold.withValues(alpha: 0.5), Colors.transparent],
+                colors: [_gold.withOpacity(0.5), Colors.transparent],
               ),
               borderRadius: BorderRadius.circular(1),
             ),
@@ -226,10 +226,10 @@ class AdminScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _gold.withValues(alpha: 0.3)),
+        border: Border.all(color: _gold.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
-            color: _deepBrown.withValues(alpha: 0.08),
+            color: _deepBrown.withOpacity(0.08),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -253,12 +253,12 @@ class AdminScreen extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [_warmOrange, _warmOrange.withValues(alpha: 0.8)],
+                      colors: [_warmOrange, _warmOrange.withOpacity(0.8)],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: _warmOrange.withValues(alpha: 0.3),
+                        color: _warmOrange.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -379,10 +379,10 @@ class _RestaurantStatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.1),
+            color: color.withOpacity(0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -394,7 +394,7 @@ class _RestaurantStatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 22),
@@ -445,10 +445,10 @@ class _RestaurantDashboardCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha: 0.15)),
+        border: Border.all(color: color.withOpacity(0.15)),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.12),
+            color: color.withOpacity(0.12),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -470,12 +470,12 @@ class _RestaurantDashboardCard extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [color, color.withValues(alpha: 0.75)],
+                      colors: [color, color.withOpacity(0.75)],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: color.withValues(alpha: 0.35),
+                        color: color.withOpacity(0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -497,16 +497,15 @@ class _RestaurantDashboardCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
+                    color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     subtitle,
-                    textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: color,
                       fontWeight: FontWeight.w500,
+                      color: color,
                     ),
                   ),
                 ),

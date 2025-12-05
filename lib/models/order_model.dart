@@ -33,9 +33,11 @@ class OrderModel {
   final double totalAmount;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final DateTime? preparationDate;
+  final DateTime? serviceDate;
+  final DateTime? paidAt;
   final String? notes;
   final PaymentMethod? paymentMethod;
-  final DateTime? paidAt;
 
   OrderModel({
     required this.id,
@@ -49,15 +51,16 @@ class OrderModel {
     required this.totalAmount,
     required this.createdAt,
     this.updatedAt,
+    this.preparationDate,
+    this.serviceDate,
+    this.paidAt,
     this.notes,
     this.paymentMethod,
-    this.paidAt,
   });
 
   factory OrderModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     
-    // Parse items
     List<OrderItemModel> items = [];
     if (data['items'] != null) {
       items = (data['items'] as List)
@@ -83,6 +86,9 @@ class OrderModel {
       totalAmount: (data['totalAmount'] ?? 0).toDouble(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+      preparationDate: (data['preparationDate'] as Timestamp?)?.toDate(),
+      serviceDate: (data['serviceDate'] as Timestamp?)?.toDate(),
+      paidAt: (data['paidAt'] as Timestamp?)?.toDate(),
       notes: data['notes'],
       paymentMethod: data['paymentMethod'] != null
           ? PaymentMethod.values.firstWhere(
@@ -90,7 +96,6 @@ class OrderModel {
               orElse: () => PaymentMethod.cash,
             )
           : null,
-      paidAt: (data['paidAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -106,9 +111,11 @@ class OrderModel {
       'totalAmount': totalAmount,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+      'preparationDate': preparationDate != null ? Timestamp.fromDate(preparationDate!) : null,
+      'serviceDate': serviceDate != null ? Timestamp.fromDate(serviceDate!) : null,
+      'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
       'notes': notes,
       'paymentMethod': paymentMethod?.name,
-      'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
     };
   }
 
@@ -124,9 +131,11 @@ class OrderModel {
     double? totalAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? preparationDate,
+    DateTime? serviceDate,
+    DateTime? paidAt,
     String? notes,
     PaymentMethod? paymentMethod,
-    DateTime? paidAt,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -140,9 +149,11 @@ class OrderModel {
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      preparationDate: preparationDate ?? this.preparationDate,
+      serviceDate: serviceDate ?? this.serviceDate,
+      paidAt: paidAt ?? this.paidAt,
       notes: notes ?? this.notes,
       paymentMethod: paymentMethod ?? this.paymentMethod,
-      paidAt: paidAt ?? this.paidAt,
     );
   }
 
@@ -185,4 +196,3 @@ class OrderModel {
     }
   }
 }
-

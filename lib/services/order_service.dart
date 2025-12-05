@@ -31,6 +31,9 @@ class OrderService {
       'totalAmount': totalAmount,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': null,
+      'preparationDate': null,
+      'serviceDate': null,
+      'paidAt': null,
       'notes': notes,
     });
 
@@ -87,9 +90,6 @@ class OrderService {
 
   // --- RÉCUPÉRER LES COMMANDES ACTIVES D'UN SERVEUR (non payées/annulées) ---
   Stream<List<OrderModel>> getActiveOrdersForServer(String serverId) {
-    // Requête simplifiée pour éviter l'index composite
-    // Le filtrage des statuts est fait côté client
-    // Suppression de orderBy dans la requête pour éviter l'erreur d'index
     return _ordersRef
         .where('serverId', isEqualTo: serverId)
         .snapshots()
@@ -118,13 +118,23 @@ class OrderService {
 
   // --- METTRE À JOUR LE STATUT D'UNE COMMANDE ---
   Future<void> updateOrderStatus(String orderId, OrderStatus newStatus) async {
-    await _ordersRef.doc(orderId).update({
+    final Map<String, dynamic> dataToUpdate = {
       'status': newStatus.name,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    };
 
-    // Si la commande est payée, libérer la table
-    if (newStatus == OrderStatus.paid) {
+    if (newStatus == OrderStatus.ready) {
+      dataToUpdate['preparationDate'] = FieldValue.serverTimestamp();
+    } else if (newStatus == OrderStatus.served) {
+      dataToUpdate['serviceDate'] = FieldValue.serverTimestamp();
+    } else if (newStatus == OrderStatus.paid) {
+      dataToUpdate['paidAt'] = FieldValue.serverTimestamp();
+    }
+
+    await _ordersRef.doc(orderId).update(dataToUpdate);
+
+    // Si la commande est payée ou annulée, libérer la table
+    if (newStatus == OrderStatus.paid || newStatus == OrderStatus.cancelled) {
       final orderDoc = await _ordersRef.doc(orderId).get();
       final data = orderDoc.data() as Map<String, dynamic>?;
       if (data != null && data['tableId'] != null) {
