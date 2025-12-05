@@ -316,7 +316,15 @@ class AdminScreen extends StatelessWidget {
             return StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('plats').snapshots(),
               builder: (context, platSnapshot) {
-                final userCount = userSnapshot.data?.docs.length ?? 0;
+                // Count only users that are not soft-deleted (deleted_at or deletedAt == null)
+                final userCount = userSnapshot.data?.docs.where((d) {
+                      final Map<String, dynamic>? data = d.data() as Map<String, dynamic>?;
+                      if (data == null) return false;
+                      // The model uses `deleted_at`, but some documents may use `deletedAt`.
+                      final deletedAt1 = data['deleted_at'];
+                      final deletedAt2 = data['deletedAt'];
+                      return deletedAt1 == null && deletedAt2 == null;
+                    }).length ?? 0;
                 final tableCount = tableSnapshot.data?.docs.length ?? 0;
                 final platCount = platSnapshot.data?.docs.length ?? 0;
 
