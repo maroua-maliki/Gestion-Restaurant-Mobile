@@ -255,6 +255,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                       ],
                     ),
                     const SizedBox(height: 8),
+                    Text('Serveur: ${order.serverName}',
+                        style: GoogleFonts.inter(color: _deepBrown, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 4),
                     Text('Commandé le: ${_formatDateTime(order.createdAt)}',
                         style: GoogleFonts.inter(color: Colors.grey[600])),
                     if (order.preparationDate != null) ...[
