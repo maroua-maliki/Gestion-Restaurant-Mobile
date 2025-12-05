@@ -314,7 +314,8 @@ class AdminScreen extends StatelessWidget {
           stream: FirebaseFirestore.instance.collection('tables').snapshots(),
           builder: (context, tableSnapshot) {
             return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('plats').snapshots(),
+              // Use the same collection as the rest of the app (`menuItems`)
+              stream: FirebaseFirestore.instance.collection('menuItems').snapshots(),
               builder: (context, platSnapshot) {
                 // Count only users that are not soft-deleted (deleted_at or deletedAt == null)
                 final userCount = userSnapshot.data?.docs.where((d) {
@@ -326,7 +327,14 @@ class AdminScreen extends StatelessWidget {
                       return deletedAt1 == null && deletedAt2 == null;
                     }).length ?? 0;
                 final tableCount = tableSnapshot.data?.docs.length ?? 0;
-                final platCount = platSnapshot.data?.docs.length ?? 0;
+                // Count only menu items that are not soft-deleted (if a soft-delete field exists)
+                final platCount = platSnapshot.data?.docs.where((d) {
+                      final Map<String, dynamic>? data = d.data() as Map<String, dynamic>?;
+                      if (data == null) return false;
+                      final deletedAt1 = data['deleted_at'];
+                      final deletedAt2 = data['deletedAt'];
+                      return deletedAt1 == null && deletedAt2 == null;
+                    }).length ?? 0;
 
                 return Row(
                   children: [
