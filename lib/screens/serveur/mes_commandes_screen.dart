@@ -11,6 +11,8 @@ class MesCommandesScreen extends StatefulWidget {
   State<MesCommandesScreen> createState() => _MesCommandesScreenState();
 }
 
+enum PaymentMethod { cash, card, mobile }
+
 class _MesCommandesScreenState extends State<MesCommandesScreen> with SingleTickerProviderStateMixin {
   final OrderService _orderService = OrderService();
   final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -143,7 +145,7 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> with SingleTick
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.2),
+                      color: statusColor.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(order.statusLabel, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
@@ -252,7 +254,7 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> with SingleTick
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(order.status).withValues(alpha: 0.2),
+                      color: _getStatusColor(order.status).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(order.statusLabel, style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold)),
@@ -318,45 +320,199 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> with SingleTick
   }
 
   void _showPaymentDialog(OrderModel order) {
-    showDialog(
+    PaymentMethod selectedMethod = PaymentMethod.cash;
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmer le paiement'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Total à payer: ${order.totalAmount.toStringAsFixed(2)} DH',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            const Text('Méthode de paiement:'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                ChoiceChip(label: const Text('Espèces'), selected: true, onSelected: (_) {}),
-                ChoiceChip(label: const Text('Carte'), selected: false, onSelected: (_) {}),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _orderService.updateOrderStatus(order.id, OrderStatus.paid);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Paiement enregistré! Table libérée.'), backgroundColor: Colors.green),
-                );
-              }
-            },
-            child: const Text('Confirmer'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-        ],
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Titre
+              const Text(
+                '💳 Encaisser la commande',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                order.type == OrderType.dineIn
+                    ? 'Table ${order.tableNumber}'
+                    : 'À emporter',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 24),
+              // Montant total
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green[400]!, Colors.green[600]!],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Total à payer',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${order.totalAmount.toStringAsFixed(2)} DH',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Mode de paiement
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Mode de paiement',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Options de paiement
+              Row(
+                children: [
+                  _buildPaymentOption(
+                    icon: Icons.money,
+                    label: 'Espèces',
+                    method: PaymentMethod.cash,
+                    selectedMethod: selectedMethod,
+                    onTap: () => setSheetState(() => selectedMethod = PaymentMethod.cash),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildPaymentOption(
+                    icon: Icons.credit_card,
+                    label: 'Carte',
+                    method: PaymentMethod.card,
+                    selectedMethod: selectedMethod,
+                    onTap: () => setSheetState(() => selectedMethod = PaymentMethod.card),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildPaymentOption(
+                    icon: Icons.phone_android,
+                    label: 'Mobile',
+                    method: PaymentMethod.mobile,
+                    selectedMethod: selectedMethod,
+                    onTap: () => setSheetState(() => selectedMethod = PaymentMethod.mobile),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Bouton confirmer
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _processPayment(order, selectedMethod);
+                  },
+                  icon: const Icon(Icons.check_circle, size: 28),
+                  label: const Text(
+                    'Confirmer le paiement',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(18),
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Bouton annuler
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annuler'),
+                ),
+              ),
+              SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+            ],
+          ),
+        ),
       ),
     );
   }
-}
 
+  Widget _buildPaymentOption({
+    required IconData icon,
+    required String label,
+    required PaymentMethod method,
+    required PaymentMethod selectedMethod,
+    required VoidCallback onTap,
+  }) {
+    final bool isSelected = method == selectedMethod;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.green.withOpacity(0.1) : Colors.grey[100],
+            border: Border.all(
+              color: isSelected ? Colors.green : Colors.grey[300]!,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 32, color: isSelected ? Colors.green : Colors.grey[700]),
+              const SizedBox(height: 8),
+              Text(label, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processPayment(OrderModel order, PaymentMethod method) async {
+    try {
+      await _orderService.updateOrderStatus(order.id, OrderStatus.paid);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Paiement enregistré!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+}
