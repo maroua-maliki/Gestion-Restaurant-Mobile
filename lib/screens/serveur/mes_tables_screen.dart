@@ -15,6 +15,8 @@ class MesTablesScreen extends StatefulWidget {
   State<MesTablesScreen> createState() => _MesTablesScreenState();
 }
 
+enum PaymentMethod { cash, card, mobile }
+
 class _MesTablesScreenState extends State<MesTablesScreen> {
   final TableService _tableService = TableService();
   final OrderService _orderService = OrderService();
@@ -80,8 +82,8 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
           padding: const EdgeInsets.all(16),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            // Ajustement du ratio pour éviter l'overflow
-            childAspectRatio: 0.85, // Slightly taller for better layout
+            // Ajustement du ratio pour des cartes plus hautes
+            childAspectRatio: 0.95, // Smaller ratio -> taller cards
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
           ),
@@ -110,7 +112,7 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
         side: BorderSide(color: statusColor.withOpacity(0.5), width: 1.5),
       ),
       child: InkWell(
-        onTap: isAvailable ? () => _showTableOptions(tableDoc) : null,
+        onTap: () => _handleTableTap(tableDoc),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -169,38 +171,22 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              if (isAvailable)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _createOrderForTable(tableDoc),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                    ),
-                    child: const Text('Commander'),
-                  ),
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => _viewCurrentOrder(tableData['currentOrderId']),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: AppColors.primary),
-                    ),
-                    child: const Text('Voir commande'),
-                  ),
-                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _handleTableTap(DocumentSnapshot tableDoc) {
+    final tableData = tableDoc.data() as Map<String, dynamic>;
+    final bool isAvailable = tableData['isAvailable'] ?? true;
+
+    if (isAvailable) {
+      _showTableOptions(tableDoc);
+    } else {
+      _viewCurrentOrder(tableData['currentOrderId']);
+    }
   }
 
   void _showTableOptions(DocumentSnapshot tableDoc) {
@@ -501,9 +487,9 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await _orderService.updateOrderStatus(order.id, OrderStatus.paid);
-                    if (context.mounted) Navigator.pop(context);
+                  onPressed: () {
+                     Navigator.pop(context);
+                    _showPaymentDialog(order);
                   },
                   icon: const Icon(Icons.payment),
                   label: const Text('Encaisser'),
@@ -518,6 +504,203 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
         ),
       ),
     );
+  }
+
+  void _showPaymentDialog(OrderModel order) {
+    PaymentMethod selectedMethod = PaymentMethod.cash;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Titre
+              const Text(
+                '💳 Encaisser la commande',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                order.type == OrderType.dineIn
+                    ? 'Table ${order.tableNumber}'
+                    : 'À emporter',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 24),
+              // Montant total
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green[400]!, Colors.green[600]!],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Total à payer',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${order.totalAmount.toStringAsFixed(2)} DH',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Mode de paiement
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Mode de paiement',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Options de paiement
+              Row(
+                children: [
+                  _buildPaymentOption(
+                    icon: Icons.money,
+                    label: 'Espèces',
+                    method: PaymentMethod.cash,
+                    selectedMethod: selectedMethod,
+                    onTap: () => setSheetState(() => selectedMethod = PaymentMethod.cash),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildPaymentOption(
+                    icon: Icons.credit_card,
+                    label: 'Carte',
+                    method: PaymentMethod.card,
+                    selectedMethod: selectedMethod,
+                    onTap: () => setSheetState(() => selectedMethod = PaymentMethod.card),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildPaymentOption(
+                    icon: Icons.phone_android,
+                    label: 'Mobile',
+                    method: PaymentMethod.mobile,
+                    selectedMethod: selectedMethod,
+                    onTap: () => setSheetState(() => selectedMethod = PaymentMethod.mobile),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Bouton confirmer
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _processPayment(order, selectedMethod);
+                  },
+                  icon: const Icon(Icons.check_circle, size: 28),
+                  label: const Text(
+                    'Confirmer le paiement',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(18),
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Bouton annuler
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annuler'),
+                ),
+              ),
+              SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption({
+    required IconData icon,
+    required String label,
+    required PaymentMethod method,
+    required PaymentMethod selectedMethod,
+    required VoidCallback onTap,
+  }) {
+    final bool isSelected = method == selectedMethod;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.green.withOpacity(0.1) : Colors.grey[100],
+            border: Border.all(
+              color: isSelected ? Colors.green : Colors.grey[300]!,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 32, color: isSelected ? Colors.green : Colors.grey[700]),
+              const SizedBox(height: 8),
+              Text(label, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processPayment(OrderModel order, PaymentMethod method) async {
+    try {
+      await _orderService.updateOrderStatus(order.id, OrderStatus.paid);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Paiement enregistré!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Color _getStatusColor(OrderStatus status) {
