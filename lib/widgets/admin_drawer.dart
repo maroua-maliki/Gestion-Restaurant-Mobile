@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restaurantapp/screens/admin/menus/manage_categories_screen.dart';
 import 'package:restaurantapp/screens/admin/menus/manage_plats_screen.dart';
+import 'package:restaurantapp/screens/admin/orders/admin_orders_screen.dart';
 import 'package:restaurantapp/screens/admin/statistics/statistics_screen.dart';
 import 'package:restaurantapp/screens/admin/tables/manage_tables_screen.dart';
 import 'package:restaurantapp/screens/admin/users/manage_users_screen.dart';
@@ -58,6 +59,12 @@ class AdminDrawer extends StatelessWidget {
                   _buildSectionHeader('Gestion'),
                   _buildDrawerItem(
                     context: context,
+                    icon: Icons.receipt_long,
+                    title: 'Commandes',
+                    onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen())),
+                  ),
+                  _buildDrawerItem(
+                    context: context,
                     icon: Icons.people_rounded,
                     title: 'Personnel',
                     onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ManageUsersScreen())),
@@ -102,7 +109,7 @@ class AdminDrawer extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: _deepBrown.withValues(alpha: 0.5),
+            color: _deepBrown.withOpacity(0.5),
             letterSpacing: 1.2,
           ),
         ),
@@ -134,7 +141,7 @@ class AdminDrawer extends StatelessWidget {
       ),
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      hoverColor: _warmOrange.withValues(alpha: 0.05),
+      hoverColor: _warmOrange.withOpacity(0.05),
     );
   }
 }
