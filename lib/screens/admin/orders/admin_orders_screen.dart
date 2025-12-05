@@ -116,76 +116,58 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   }
 
   Widget _buildOrderCard(OrderModel order) {
+    final colorScheme = Theme.of(context).colorScheme;
     Color statusColor = _getStatusColor(order.status);
 
-    return Container(
+    return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _gold.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: _deepBrown.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showOrderDetails(order),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                            order.type == OrderType.dineIn
-                                ? Icons.restaurant_rounded
-                                : Icons.takeout_dining_rounded,
-                            color: _warmOrange),
-                        const SizedBox(width: 10),
-                        Text(
-                          order.type == OrderType.dineIn
-                              ? 'Table ${order.tableNumber ?? "N/A"}'
-                              : 'À emporter',
-                          style: GoogleFonts.inter(
-                              fontWeight: FontWeight.bold, fontSize: 16, color: _deepBrown),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => _showOrderDetails(order),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(order.type == OrderType.dineIn ? Icons.restaurant : Icons.takeout_dining,
+                          color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        order.type == OrderType.dineIn
+                            ? 'Table ${order.tableNumber ?? "N/A"}'
+                            : 'À emporter',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      child: Text(order.statusLabel,
-                          style: GoogleFonts.inter(
-                              color: statusColor, fontSize: 12, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-                const Divider(height: 20, color: _gold, thickness: 0.2),
-                Text(
-                    '${order.items.length} article(s) • ${order.totalAmount.toStringAsFixed(2)} DH',
-                    style: GoogleFonts.inter(fontSize: 14, color: _deepBrown.withOpacity(0.8))),
-                const SizedBox(height: 6),
-                Text(
-                  _formatDateTime(order.createdAt),
-                  style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12),
-                ),
-              ],
-            ),
+                    child: Text(order.statusLabel, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Text('${order.items.length} article(s) • ${order.totalAmount.toStringAsFixed(2)} DH',
+                  style: const TextStyle(fontSize: 14)),
+              const SizedBox(height: 4),
+              Text(
+                'Serveur: ${order.serverName}',
+                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _formatDateTime(order.createdAt),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+            ],
           ),
         ),
       ),
@@ -194,12 +176,18 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pending: return Colors.orange;
-      case OrderStatus.inProgress: return Colors.blue;
-      case OrderStatus.ready: return Colors.green;
-      case OrderStatus.served: return Colors.purple;
-      case OrderStatus.paid: return _deepBrown.withOpacity(0.7);
-      case OrderStatus.cancelled: return Colors.red;
+      case OrderStatus.pending:
+        return Colors.orange;
+      case OrderStatus.inProgress:
+        return Colors.blue;
+      case OrderStatus.ready:
+        return Colors.green;
+      case OrderStatus.served:
+        return Colors.purple;
+      case OrderStatus.paid:
+        return _deepBrown.withOpacity(0.7);
+      case OrderStatus.cancelled:
+        return Colors.red;
     }
   }
 

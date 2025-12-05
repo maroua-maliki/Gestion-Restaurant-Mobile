@@ -10,6 +10,7 @@ import 'package:restaurantapp/screens/admin/admin_screen.dart';
 import 'package:restaurantapp/screens/chef/chef_screen.dart';
 import 'package:restaurantapp/screens/profile/profile_screen.dart';
 import 'package:restaurantapp/screens/serveur/serveur_screen.dart';
+import 'package:restaurantapp/screens/serveur/mes_commandes_screen.dart';
 import 'package:restaurantapp/screens/settings/settings_screen.dart';
 import 'package:restaurantapp/services/order_service.dart';
 import 'package:restaurantapp/widgets/admin_drawer.dart';
@@ -120,18 +121,18 @@ class _MainScreenState extends State<MainScreen> {
 
            final newReadyOrders = readyOrders.where((o) => !_notifiedReadyOrderIds.contains(o.id)).toList();
            for (var order in newReadyOrders) {
-               _showNotification(
-                   title: 'Commande prête !',
-                   body: order.type == OrderType.dineIn
-                       ? 'Table ${order.tableNumber ?? "N/A"} - ${order.items.length} article(s)'
-                       : 'À emporter - ${order.items.length} article(s)',
-                   color: AppColors.success,
-                   icon: Icons.check_circle_rounded,
-                   onTap: () {
-                      setState(() => _selectedIndex = 0);
-                   },
-               );
-               _notifiedReadyOrderIds.add(order.id);
+             _showNotification(
+               title: 'Commande prête !',
+               body: order.type == OrderType.dineIn
+                 ? 'Table ${order.tableNumber ?? "N/A"} - ${order.items.length} article(s)'
+                 : 'À emporter - ${order.items.length} article(s)',
+               color: AppColors.success,
+               icon: Icons.check_circle_rounded,
+               onTap: () {
+                _openMesCommandes();
+               },
+             );
+             _notifiedReadyOrderIds.add(order.id);
            }
            if (mounted) {
              final unreadCount = readyOrders.where((o) => !_readNotificationIds.contains(o.id)).length;
@@ -441,7 +442,20 @@ class _MainScreenState extends State<MainScreen> {
       }
     });
     Navigator.pop(context);
+    _openMesCommandes();
+  }
+
+  void _openMesCommandes() {
+    if (!mounted) return;
+    // Ensure home tab is selected first
     setState(() => _selectedIndex = 0);
+    // Navigate to MesCommandesScreen after frame so the home screen is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.userRole == 'Serveur') {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const MesCommandesScreen()));
+      }
+    });
   }
 
   void _markAllAsRead() {
