@@ -99,7 +99,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: _warmOrange.withValues(alpha: 0.4),
+              color: _warmOrange.withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -142,7 +142,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: _gold.withValues(alpha: 0.1),
+              color: _gold.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.people_outline_rounded, size: 64, color: _gold),
@@ -186,7 +186,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: _warmOrange.withValues(alpha: 0.1),
+                  color: _warmOrange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -226,13 +226,13 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _gold.withValues(alpha: 0.3)),
+                      border: Border.all(color: _gold.withOpacity(0.3)),
                     ),
                     child: DropdownButtonFormField<String>(
                       value: selectedRole,
                       decoration: InputDecoration(
                         labelText: 'Rôle',
-                        labelStyle: GoogleFonts.inter(color: _deepBrown),
+                        labelStyle: GoogleFonts.inter(color: Colors.grey[600]),
                         prefixIcon: Icon(Icons.badge_outlined, color: _warmOrange),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -302,7 +302,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _gold.withValues(alpha: 0.3)),
+        border: Border.all(color: _gold.withOpacity(0.3)),
       ),
       child: TextFormField(
         controller: controller,
@@ -332,7 +332,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
+                color: Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.warning_rounded, color: Colors.red, size: 22),
@@ -387,10 +387,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       decoration: BoxDecoration(
         color: isActive ? Colors.white : Colors.grey[100],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isActive ? roleColor.withValues(alpha: 0.2) : Colors.grey[300]!),
+        border: Border.all(color: isActive ? roleColor.withOpacity(0.2) : Colors.grey[300]!),
         boxShadow: isActive ? [
           BoxShadow(
-            color: roleColor.withValues(alpha: 0.1),
+            color: roleColor.withOpacity(0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -411,7 +411,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     gradient: isActive ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [roleColor, roleColor.withValues(alpha: 0.7)],
+                      colors: [roleColor, roleColor.withOpacity(0.7)],
                     ) : null,
                     color: isActive ? null : Colors.grey[300],
                     borderRadius: BorderRadius.circular(14),
@@ -444,7 +444,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: roleColor.withValues(alpha: isActive ? 0.15 : 0.08),
+                              color: roleColor.withOpacity(isActive ? 0.15 : 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -459,7 +459,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+                              color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(

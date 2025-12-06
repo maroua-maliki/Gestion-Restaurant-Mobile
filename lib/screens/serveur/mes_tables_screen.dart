@@ -83,7 +83,7 @@ class _MesTablesScreenState extends State<MesTablesScreen> {
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             // Ajustement du ratio pour des cartes plus hautes
-            childAspectRatio: 0.95, // Smaller ratio -> taller cards
+            childAspectRatio: 1.25, // Smaller ratio -> taller cards
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
           ),
