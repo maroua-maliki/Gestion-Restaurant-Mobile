@@ -17,6 +17,8 @@ dependencies:
   cloud_firestore: ^4.15.8
   cloud_functions: ^4.6.8
   firebase_storage: ^11.6.9 # Pour le stockage des images
+  firebase_messaging: ^14.7.20 # Ajouté pour les notifications push
+  flutter_local_notifications: ^17.1.2 # Pour afficher les notifications en premier plan
   # firebase_app_check: ^0.2.1+1 # Supprime car non voulu
   
   # Package pour la sélection d'images

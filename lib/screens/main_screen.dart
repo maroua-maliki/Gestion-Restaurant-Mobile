@@ -3,8 +3,10 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restaurantapp/core/theme/app_theme.dart';
+import 'package:restaurantapp/main.dart';
 import 'package:restaurantapp/models/order_model.dart';
 import 'package:restaurantapp/screens/admin/admin_screen.dart';
 import 'package:restaurantapp/screens/chef/chef_screen.dart';
@@ -90,11 +92,6 @@ class _MainScreenState extends State<MainScreen> {
             body: order.type == OrderType.dineIn
                 ? 'Table ${order.tableNumber ?? "N/A"} - ${order.serverName}'
                 : 'À emporter - ${order.serverName}',
-            color: AppColors.warning,
-            icon: Icons.notifications_active_rounded,
-            onTap: () {
-              setState(() => _selectedIndex = 0); // Go to kitchen dashboard
-            },
           );
           _notifiedPendingOrderIds.add(order.id);
         }
@@ -126,11 +123,6 @@ class _MainScreenState extends State<MainScreen> {
                body: order.type == OrderType.dineIn
                  ? 'Table ${order.tableNumber ?? "N/A"} - ${order.items.length} article(s)'
                  : 'À emporter - ${order.items.length} article(s)',
-               color: AppColors.success,
-               icon: Icons.check_circle_rounded,
-               onTap: () {
-                _openMesCommandes();
-               },
              );
              _notifiedReadyOrderIds.add(order.id);
            }
@@ -147,50 +139,24 @@ class _MainScreenState extends State<MainScreen> {
   void _showNotification({
     required String title,
     required String body,
-    required Color color,
-    required IconData icon,
-    VoidCallback? onTap,
   }) {
-      _playNotificationSound();
+    _playNotificationSound();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(body),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: color,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 5),
-            action: onTap != null ? SnackBarAction(
-              label: 'VOIR',
-              textColor: Colors.white,
-              onPressed: onTap,
-            ) : null,
-          ),
-        );
-      }
+    flutterLocalNotificationsPlugin.show(
+      body.hashCode,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'high_importance_channel',
+          'High Importance Notifications',
+          channelDescription: 'This channel is used for important notifications.',
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+        ),
+      ),
+    );
   }
 
   Future<void> _playNotificationSound() async {
