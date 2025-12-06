@@ -123,6 +123,7 @@ class _MainScreenState extends State<MainScreen> {
                body: order.type == OrderType.dineIn
                  ? 'Table ${order.tableNumber ?? "N/A"} - ${order.items.length} article(s)'
                  : 'À emporter - ${order.items.length} article(s)',
+               payload: 'mes_commandes',
              );
              _notifiedReadyOrderIds.add(order.id);
            }
@@ -139,6 +140,7 @@ class _MainScreenState extends State<MainScreen> {
   void _showNotification({
     required String title,
     required String body,
+    String? payload,
   }) {
     _playNotificationSound();
 
@@ -156,6 +158,7 @@ class _MainScreenState extends State<MainScreen> {
           ticker: 'ticker',
         ),
       ),
+      payload: payload,
     );
   }
 

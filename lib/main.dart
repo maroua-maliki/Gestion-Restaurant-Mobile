@@ -6,24 +6,38 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:restaurantapp/core/theme/app_theme.dart';
 import 'package:restaurantapp/firebase_options.dart';
 import 'package:restaurantapp/screens/login/login_screen.dart';
+import 'package:restaurantapp/screens/serveur/mes_commandes_screen.dart';
 
-// Function to handle background messages
+// Clé de navigation globale pour accéder au contexte de navigation partout
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// Gestionnaire de messages en arrière-plan
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.
-  print('Handling a background message: \${message.messageId}');
+  print('Handling a background message: ${message.messageId}');
 }
 
-// Initialize local notifications
+// Initialisation des notifications locales
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
+
+// Callback exécuté lorsqu'une notification est cliquée
+void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
+  final String? payload = notificationResponse.payload;
+  if (notificationResponse.payload != null) {
+    debugPrint('notification payload: $payload');
+  }
+  // Si le payload correspond, naviguez vers l'écran des commandes
+  if (payload == 'mes_commandes') {
+    navigatorKey.currentState?.push(MaterialPageRoute(builder: (context) => const MesCommandesScreen()));
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set system UI overlay style
+  // Style de la barre de statut
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -37,11 +51,11 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Firebase Messaging setup
+  // Configuration de Firebase Messaging
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  NotificationSettings settings = await messaging.requestPermission(
+  await messaging.requestPermission(
     alert: true,
     announcement: false,
     badge: true,
@@ -51,25 +65,22 @@ Future<void> main() async {
     sound: true,
   );
 
-  print('User granted permission: \${settings.authorizationStatus}');
-
-  // Get the FCM token
-  String? token = await messaging.getToken();
-  print("FCM Token: \$token");
-
-  // Local notifications setup
+  // Configuration des notifications locales
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('notification_icon'); // Utilisation de l'icône personnalisée
   const InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
   );
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: onDidReceiveNotificationResponse, // Définir le gestionnaire de clics
+  );
 
-  // Create a channel for Android
+  // Création du canal de notification pour Android
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'high_importance_channel', // id
-    'High Importance Notifications', // title
-    description: 'This channel is used for important notifications.', // description
+    'high_importance_channel',
+    'High Importance Notifications',
+    description: 'This channel is used for important notifications.',
     importance: Importance.max,
   );
 
@@ -78,7 +89,7 @@ Future<void> main() async {
           AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
 
-  // Listen for foreground messages
+  // Écoute des messages lorsque l'application est au premier plan
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
@@ -93,14 +104,14 @@ Future<void> main() async {
             channel.id,
             channel.name,
             channelDescription: channel.description,
-            icon: android.smallIcon,
-            // other properties...
+            icon: 'notification_icon', // Utilisation de l'icône personnalisée
           ),
         ),
+        // Utiliser le payload pour spécifier la page de destination
+        payload: message.data['screen'],
       );
     }
   });
-
 
   runApp(const MyApp());
 }
@@ -111,6 +122,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey, // Définir la clé de navigation
       debugShowCheckedModeBanner: false,
       title: 'Restaurant App',
       theme: AppTheme.lightTheme,
