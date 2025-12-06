@@ -22,12 +22,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final Future<DocumentSnapshot<Map<String, dynamic>>> _userFuture;
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     if (currentUser != null) {
       _userFuture = FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).get();
     }
+  }
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   Color _getRoleColor(String? role) {
@@ -40,6 +54,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return AppColors.primary;
     }
+  }
+
+  void _showChangePasswordDialog() {
+    _currentPasswordController.clear();
+    _newPasswordController.clear();
+    _confirmPasswordController.clear();
+    _isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.lock_rounded, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Changer le mot de passe'),
+                ],
+              ),
+              content: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _currentPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Mot de passe actuel',
+                        prefixIcon: Icon(Icons.lock_outline_rounded),
+                      ),
+                      validator: (v) => v!.isEmpty ? 'Requis' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _newPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Nouveau mot de passe',
+                        prefixIcon: Icon(Icons.lock_rounded),
+                      ),
+                      validator: (v) => (v?.length ?? 0) < 6 ? '6 caractères minimum' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirmer le mot de passe',
+                        prefixIcon: Icon(Icons.lock_rounded),
+                      ),
+                      validator: (v) => v != _newPasswordController.text ? 'Les mots de passe ne correspondent pas' : null,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  child: const Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          if (_formKey.currentState!.validate()) {
+                            setState(() => _isLoading = true);
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user == null) return;
+
+                            try {
+                              final cred = EmailAuthProvider.credential(
+                                email: user.email!,
+                                password: _currentPasswordController.text,
+                              );
+                              await user.reauthenticateWithCredential(cred);
+                              await user.updatePassword(_newPasswordController.text);
+
+                              if (mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Row(
+                                      children: [
+                                        Icon(Icons.check_circle_rounded, color: Colors.white),
+                                        SizedBox(width: 12),
+                                        Text('Mot de passe changé avec succès !'),
+                                      ],
+                                    ),
+                                    backgroundColor: AppColors.success,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                );
+                              }
+                            } on FirebaseAuthException catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(e.code == 'wrong-password'
+                                        ? 'Le mot de passe actuel est incorrect.'
+                                        : 'Une erreur est survenue.'),
+                                    backgroundColor: AppColors.error,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                              }
+                            }
+                          }
+                        },
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Enregistrer'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -272,9 +425,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Changer le mot de passe',
             accentColor,
             textColor,
-            () {
-              // TODO: Implement password change
-            },
+            _showChangePasswordDialog,
           ),
           _buildActionTile(
             Icons.help_outline_rounded,
