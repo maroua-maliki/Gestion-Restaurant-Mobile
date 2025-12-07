@@ -172,6 +172,21 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> with SingleTick
                   ),
                 ),
               ],
+              if (order.status == OrderStatus.pending) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _cancelOrder(order),
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Annuler la commande'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -212,6 +227,23 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> with SingleTick
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _cancelOrder(OrderModel order) async {
+    try {
+      await _orderService.updateOrderStatus(order.id, OrderStatus.cancelled);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Commande annulée'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'annulation: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -310,6 +342,23 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> with SingleTick
                     icon: const Icon(Icons.payment),
                     label: const Text('Procéder au paiement'),
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
+                  ),
+                ),
+              if (order.status == OrderStatus.pending)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await _cancelOrder(order);
+                      if (mounted) Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Annuler la Commande'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
                   ),
                 ),
             ],
