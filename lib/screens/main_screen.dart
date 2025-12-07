@@ -151,11 +151,12 @@ class _MainScreenState extends State<MainScreen> {
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'high_importance_channel',
-          'High Importance Notifications',
+          'Saveurs',
           channelDescription: 'This channel is used for important notifications.',
           importance: Importance.max,
           priority: Priority.high,
           ticker: 'ticker',
+          icon: '@mipmap/ic_launcher',
         ),
       ),
       payload: payload,
